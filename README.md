@@ -26,10 +26,12 @@ Full detailed documentation is forthcoming. For now, please refer to the  exampl
 # Installation
 You may download a precompiled binary from the /bin directory or build from source.
 
-#### Precompiled binary 
+**Precompiled binary**
+
 A precompiled binary for Mac OS X Mavericks is currently the only one available. Download it from the /bin directory and place it in your user path. Please email me if this does not work as the binary may require additional library files.
 
-#### From source
+**From source**
+
 *vandelay* is written in Haskell. To compile from source, 
 
 * Install Haskell. The Haskell Platform is recommended: <https://www.haskell.org/platform/>. 
