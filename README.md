@@ -7,7 +7,8 @@ A LaTeX table importer/exporter
 
 
 
-###Features
+**Features**
+
 * Easily create multiple tables from a single file containing the results from estimating several specifications. 
 * Eliminate the need to re-run your estimation should you decide to reformat your tables.
 * Save time when revising your results with automated table generation. 
