@@ -4,8 +4,10 @@ A LaTeX table importer/exporter
 
 # Overview
 
-**Features**
 
+
+
+#Features
 * Easily create multiple tables from a single file containing the results from estimating several specifications. 
 * Eliminate the need to re-run your estimation should you decide to reformat your tables.
 * Save time when revising your results with automated table generation. 
@@ -15,17 +17,18 @@ A LaTeX table importer/exporter
 * Show or hide key statistics (such as *t*-statistic) as necessary.
 
 # Example
+To do
+
+# Documentation
+Full detailed documentation is forthcoming. For now, please refer to the  example.
 
 # Installation
-
 You may download a precompiled binary from the /bin directory or build from source.
 
 ## Precompiled binary 
-
 A precompiled binary for Mac OS X Mavericks is currently the only one available. Download it from the /bin directory and place it in your user path. Please email me if this does not work as the binary may require additional library files.
 
 ## From source
-
 *vandelay* is written in Haskell. To compile from source, 
 
 * Install Haskell. The Haskell Platform is recommended: <https://www.haskell.org/platform/>. 
@@ -33,5 +36,11 @@ A precompiled binary for Mac OS X Mavericks is currently the only one available.
 * Use the command `cabal install vandelay.cabal` from the project root directory.
 
 # To Do
+* Allow for comments in the template file
+* Allow for data commands to end with a semicolon
+* Improve user messages when a template is misspecified
+* *vandelay make* subcommand support wildcard filenames
+
 
 # Contributing
+To do 
