@@ -11,7 +11,6 @@ import App.Vandelay.Text
 import Data.Bool
 import System.Directory
 import System.IO
-import Rainbow
 
 
 

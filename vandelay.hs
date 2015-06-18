@@ -101,7 +101,7 @@ run cmd = do
 
     case result of 
       Left err  -> putChunkLn ( "Vandelay error:" <> fore red <> bold) 
-                >> putChunkLn (chunkFromText . T.pack $ err)
+                >> putStrLn err
       Right _   -> return () 
 
 

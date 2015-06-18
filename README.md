@@ -43,7 +43,7 @@ A precompiled binary for Mac OS X Mavericks is currently the only one available.
 * Allow for data commands to end with a semicolon
 * Improve user messages when a template is misspecified
 * *vandelay make* subcommand support wildcard filenames
-
+* Add support for merging multiple estimation results files 
 
 # Contributing
 To do 

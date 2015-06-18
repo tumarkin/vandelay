@@ -21,6 +21,8 @@ import Data.Monoid
 import App.Vandelay.Estimates.Types
 import App.Vandelay.Text
 
+import Debug.Trace
+
 
 
 
@@ -88,9 +90,9 @@ safeGetFromConfiguration f e c | unspecified = Left $ e
 instance Monoid Configuration where
   mempty = blankConfiguration
   mappend ca cb   
-    = Configuration { datafile = datafile ca `mappend` datafile cb
-                    , desiredModels   = desiredModels   ca `mappend` desiredModels   cb
-                    , texfile  = texfile  ca `mappend` texfile  cb
+    = Configuration { datafile      = datafile ca `mappend` datafile cb
+                    , desiredModels = desiredModels   ca `mappend` desiredModels   cb
+                    , texfile       = texfile  ca `mappend` texfile  cb
                     }
 
 
@@ -104,13 +106,14 @@ data TableCommand = Latex    Text
                   | Data     OutputRequest
                   deriving (Show)
 
-data DataCommand = Name     Text
+data DataCommand = StatLine Int
+                 | Name     Text
                  | Code     Text
-                 | Index    Text
+                 | Index    Int
                  | Format   Text
                  | Scale    Text
                  | Surround Text
-                 deriving (Show)
+                 deriving (Show, Ord, Eq)
 
 
 
@@ -120,18 +123,22 @@ data DataCommand = Name     Text
 
 
 
-createOutputRequest :: [DataCommand] 
+createOutputRequest :: OutputRequest -- Last complete output request, used for seeding statlines
+                    -> [DataCommand] 
                     -> OutputRequest
-createOutputRequest dcs = 
-  foldl modifyOutputRequest defaultOutputRequest dcs 
+createOutputRequest lcor dcs = 
+  snd . foldl modifyOutputRequest (lcor, defaultOutputRequest) $ dcs 
 
-modifyOutputRequest :: OutputRequest -> DataCommand -> OutputRequest
-modifyOutputRequest or (Name     t) = or{oName    = unpack t}
-modifyOutputRequest or (Code     t) = or{oCoeffs  = stripSplitCommas t}
-modifyOutputRequest or (Index    t) = or{oItemIdx = (read . unpack $ t)::Int}
-modifyOutputRequest or (Format   t) = or{oFormat  = unpack t}
-modifyOutputRequest or (Scale    t) = error "Scale is not implemented" 
-modifyOutputRequest or (Surround t) = or{oSurround = (preStr, postStr)} 
+modifyOutputRequest :: (OutputRequest, OutputRequest) -- (Last output request, Current output request)
+                    -> DataCommand   
+                    -> (OutputRequest, OutputRequest) -- (Last outputrequest, Resulting output request)
+modifyOutputRequest (lor, or) (StatLine i) = (lor, lor{oName    = "", oItemIdx = i})
+modifyOutputRequest (lor, or) (Name     t) = (lor,  or{oName    = unpack t})
+modifyOutputRequest (lor, or) (Code     t) = (lor,  or{oCoeffs  = stripSplitCommas t})
+modifyOutputRequest (lor, or) (Index    i) = (lor,  or{oItemIdx = i})
+modifyOutputRequest (lor, or) (Format   t) = (lor,  or{oFormat  = unpack t})
+modifyOutputRequest (lor, or) (Scale    t) = error "Scale is not implemented" 
+modifyOutputRequest (lor, or) (Surround t) = (lor,  or{oSurround = (preStr, postStr)})
     where 
   (preStr:postStr:other) = stripSplitCommas t
 

@@ -53,18 +53,20 @@ makeStars i | i == 0    = ""
 -- Output request
 
 data OutputRequest =
-  OutputRequest { oName    :: String
-                , oCoeffs  :: [String]  
-                , oItemIdx :: Int
-                , oFormat  :: String
-                , oSurround :: (String, String)
+  OutputRequest { oName :: String
+                , oCoeffs             :: [String]
+                , oItemIdx            :: Int
+                , oFormat             :: String
+                , oSurround           :: (String, String)
                 }
                 deriving (Show)
 
 defaultOutputRequest =
-  OutputRequest { oName  = ""
-                , oCoeffs = []
-                , oItemIdx = 0
-                , oFormat  = "%1.3f"
-                , oSurround = ("", "") 
+  OutputRequest { oName     = ""
+                , oCoeffs   = []
+                , oItemIdx  = 0
+                , oFormat   = "%1.3f"
+                , oSurround = ("", "")
                 }
+
+

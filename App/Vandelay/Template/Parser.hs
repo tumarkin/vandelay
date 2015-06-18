@@ -5,19 +5,19 @@ module App.Vandelay.Template.Parser
 import Debug.Trace
 
 import Control.Applicative
-import Control.Monad -- (MonadPlus(..), ap)
+import Control.Monad 
 import Data.Maybe
+import Data.List (sort)
 import Data.Monoid
-
-import Text.Parsec.Error
 import Text.ParserCombinators.Parsec hiding (many, optional, (<|>))
-import qualified Text.Parsec.Prim as P
-import qualified Data.Char as C
+import Text.ParserCombinators.Parsec.Number(int)
 import qualified Data.Text as T
 
+import App.Vandelay.Text
 import App.Vandelay.Types
 import App.Vandelay.Template.Types
 import App.Vandelay.IO
+import App.Vandelay.Estimates.Types (defaultOutputRequest)
 
 
 
@@ -33,12 +33,12 @@ readTemplateEIO f =
   --   Right vt  -> right $ vt
 
 
-traceControl = False
 
+traceControl = False
 -- PARSE FUNCTION
 parseTemplate :: String -> Either String VandelayTemplate
 parseTemplate input = 
-  case parse tablefile "Table parsing error: " input of 
+  case runParser tablefile defaultOutputRequest "Table parsing error: " input of 
     Left e  -> case traceControl of
                   True -> traceShow e $ (Left $ show e)
                   False -> Left $ show e 
@@ -47,16 +47,22 @@ parseTemplate input =
                   False -> Right r
 
 
+--- Parser
+
+type LastOutputRequest = OutputRequest
+type UserState         = LastOutputRequest
 
 
 
-tablefile :: GenParser Char st VandelayTemplate
+
+
+tablefile :: GenParser Char UserState VandelayTemplate
 tablefile = 
   skipMany blankline *> many section <* eof  -- Generates a list of Vandelay tables 
   >>= return . mconcat -- Concates the Vandelay tables into a single table
 
 
-section :: GenParser Char st VandelayTemplate 
+section :: GenParser Char UserState VandelayTemplate 
 section = 
       configSection
   <|> tableSection
@@ -70,12 +76,12 @@ section =
 
 
 -- CONFIGURATION SECTION
-configSection  :: GenParser Char st VandelayTemplate
-configLine     :: GenParser Char st Configuration
-configCommand  :: GenParser Char st Configuration
-configDataFile :: GenParser Char st Configuration
-configModels   :: GenParser Char st Configuration
-configTexfile  :: GenParser Char st Configuration
+configSection  :: GenParser Char UserState VandelayTemplate
+configLine     :: GenParser Char UserState Configuration
+configCommand  :: GenParser Char UserState Configuration
+configDataFile :: GenParser Char UserState Configuration
+configModels   :: GenParser Char UserState Configuration
+configTexfile  :: GenParser Char UserState Configuration
 
 configSection = do
   _  <- string "configuration:" <* eol 
@@ -102,9 +108,9 @@ configTexfile  = basicCommand "tex:" (\p -> blankConfiguration{texfile = Last . 
 
 
 -- TABLE SECTION
-tableSection   :: GenParser Char st VandelayTemplate
-tableLine      :: GenParser Char st (Maybe TableCommand)
-tableStatement :: GenParser Char st (Maybe TableCommand)
+tableSection   :: GenParser Char UserState VandelayTemplate
+tableLine      :: GenParser Char UserState (Maybe TableCommand)
+tableStatement :: GenParser Char UserState (Maybe TableCommand)
 
 tableSection = do 
   _    <- string "table:" *> eol
@@ -121,38 +127,57 @@ tableStatement =
       try (basicCommand "template:" (Just . Template))
   <|> try (basicCommand "latex:" (Just . Latex)) 
   <|> try dataRow
-  <?> "table output statement (template, latex, code, index, format, name,  scale, and surround)." 
+  <?> "table output statement (template, latex, code, index, format, name, scale, and surround)." 
 
 
 -- DATA COMMAND
-dataRow      :: GenParser Char st (Maybe TableCommand)
-dataCommands :: GenParser Char st [DataCommand]
-dataCommand  :: GenParser Char st DataCommand
+dataRow      :: GenParser Char UserState (Maybe TableCommand)
+dataCommands :: GenParser Char UserState [DataCommand]
+dataCommand  :: GenParser Char UserState DataCommand
+dataCommand'':: GenParser Char UserState DataCommand
 
 dataRow = do
   d <- dataCommands <* eol
-  return . Just $ Data (createOutputRequest d)
+  lastOr <- getState
+  let or = createOutputRequest lastOr . sort $ d  -- Sort these to ensure the StatLine comes first
+  _ <- updateState (\_ -> or)
+  return . Just $ Data or -- (createOutputRequest d)
 
-dataCommands = sepBy dataCommand (char ';')
+dataCommands = sepBy (spaces >> dataCommand'') (char ';')
 
-dataCommand =  do 
-  fcn <-  spaces >> dataCommand' 
-  ps  <- many (noneOf ";\n")
-  return $ fcn (stripStr ps)
+dataCommand = undefined
+-- dataCommand =  do 
+--   fcn <-  spaces >> dataCommand' 
+--   ps  <- many (noneOf ";\n")
+--   return $ fcn (stripStr ps)
 
-dataCommand' = 
-      (try (string "scale:") >> return Scale)
-  <|> (string "surround:"    >> return Surround)
-  <|> (string "name:"        >> return Name) 
-  <|> (string "code:"        >> return Code)
-  <|> (string "index:"       >> return Index)
-  <|> (string "format:"      >> return Format)
+-- dataCommand' = 
+--       (try (string "scale:")    >> return Scale)
+--   <|> (try (string "surround:") >> return Surround)
+--   -- <|> ((string "stat:")         >> return StatLine)
+--   <|> (string "name:"           >> return Name) 
+--   <|> (string "code:"           >> return Code)
+--   -- <|> (string "index:"          >> return Index)
+--   <|> (string "format:"         >> return Format)
+
+dataCommand'' = 
+      Scale . pack    <$> ( (try (string "scale:")    *> many (noneOf ";\n")))
+  <|> Surround . pack <$> ( (try (string "surround:") *> many (noneOf ";\n")))
+  <|> StatLine        <$> ( (     string "stat:")     *> spaces *> int ) 
+  <|> Index           <$> ( (     string "index:")    *> spaces *> int ) 
+  <|> Name . pack     <$> ( (try (string "name:")     *> many (noneOf ";\n")))
+  <|> Code . pack     <$> ( (try (string "code:")     *> many (noneOf ";\n")))
+  <|> Format . pack   <$> ( (try (string "format:")   *> many (noneOf ";\n")))
+  -- <|> (string "name:"           >> return Name) 
+  -- <|> (string "code:"           >> return Code)
+  -- <|> (string "format:"         >> return Format)
+
 
 
 -- SUBSTITUTION SECTION
-subSection     :: GenParser Char st VandelayTemplate
-subCommands    :: GenParser Char st (T.Text, T.Text)
-subDeclaration :: GenParser Char st String
+subSection     :: GenParser Char UserState VandelayTemplate
+subCommands    :: GenParser Char UserState (Text, Text)
+subDeclaration :: GenParser Char UserState String
 
 subSection = do 
   _    <- string "substitutions:" *> eol 
@@ -191,7 +216,7 @@ subDeclaration =
 
 -- Parsec utility functions
 basicCommand :: String 
-                -> (T.Text -> a) 
+                -> (Text -> a) 
                 -> GenParser Char st a
 basicCommand codestr fcn = 
   (string codestr) *> manyTillEol
@@ -214,6 +239,7 @@ sectionHeadOrEof =
 manyTillEol             = manyTill anyChar eol 
 manyTillSectionHeader x = manyTill x (lookAhead sectionHeadOrEof)
 
+
 -- Taken from http://stackoverflow.com/questions/27469281/get-current-position-in-parsed-source-using-parsec
 sourcePos :: GenParser Char st SourcePos
 sourcePos = statePos `liftM` getParserState
@@ -225,8 +251,8 @@ parseInt = do
   return $ (pos) -- , (read numStr))
 
 -- Text utility functions
-stripStr :: String -> T.Text
-stripStr = T.strip . T.pack 
+stripStr :: String -> Text
+stripStr = T.strip . pack 
 
 
 
