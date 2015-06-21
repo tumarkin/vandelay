@@ -1,48 +1,44 @@
 module App.Vandelay.Template.Types
   ( VandelayTemplate(..)
   , blankVandelayTemplate
+  , loadEstimates
 
-  , VTLoaded(..)
-  , toVTLoaded
+  -- , VTLoaded(..)
+  -- , toVTLoaded
 
   , Configuration(..)
   , blankConfiguration
 
   , TableCommand(..)
 
-  -- , DataCommand(..)
-
   , safeGetDatafile
   , safeGetDesiredModels
   , safeGetTexfile
 
-  -- , createOutputRequest
-  -- , OutputRequest(..)
+
   ) where
 
-import App.Vandelay.Estimates
+-- import App.Vandelay.Estimates
 import App.Vandelay.Estimates.Types
+import App.Vandelay.Estimates.Parser
 import App.Vandelay.Text
 import App.Vandelay.Types
 
-import Debug.Trace
-
-
-
 
 -- Vandalay Template 
-
 data VandelayTemplate =
   VandelayTemplate { configuration :: Configuration
                    , table         :: [TableCommand]
                    , substitutions :: [(Text, Text)] 
+                   , estimates     :: Maybe Estimates
                    }
                 deriving (Show)
 
 blankVandelayTemplate = 
   VandelayTemplate { configuration = blankConfiguration
                    , table         = []
-                   , substitutions  = []
+                   , substitutions = []
+                   , estimates     = Nothing
                    }
               
 instance Monoid VandelayTemplate where
@@ -50,33 +46,41 @@ instance Monoid VandelayTemplate where
   mappend a b = 
     VandelayTemplate{ configuration = configuration a <> configuration b
                     , table         = table a <> table b
-                    , substitutions  = substitutions a <> substitutions b
+                    , substitutions = substitutions a <> substitutions b
+                    , estimates     = Nothing
                     }
 
 
--- Klugey fix for vandelay template loading which should be done in the parser
-data VTLoaded =
-  VTLoaded{ vtlTable         :: [TableCommand]
-          , vtlSubstitutions :: [(Text, Text)] 
-          , vtlDesiredModels :: [String]
-          , vtlEstimates     :: Estimates
-          , vtlOutputKluge   :: (Estimates, [String])
-          }
-          deriving (Show)
 
-toVTLoaded :: VandelayTemplate -> EIO String VTLoaded
-toVTLoaded vt = do
-  config <- return (configuration vt)
-  dms    <- hoistEither (safeGetDesiredModels config)
-  df     <- hoistEither (safeGetDatafile config)
-  est    <- readEstimatesEIO (df)
+loadEstimates :: VandelayTemplate -> EIO String VandelayTemplate
+loadEstimates vt = do 
+  est    <- readEstimatesEIO =<< hoistEither (safeGetDatafile vt)
+  return vt{estimates = Just est}
 
-  return VTLoaded{ vtlTable         = table vt
-                 , vtlSubstitutions = substitutions vt
-                 , vtlDesiredModels = dms
-                 , vtlEstimates     = est
-                 , vtlOutputKluge   = (est, dms)
-                 }
+
+-- -- Klugey fix for vandelay template loading which should be done in the parser
+-- data VTLoaded =
+--   VTLoaded{ vtlTable         :: [TableCommand]
+--           , vtlSubstitutions :: [(Text, Text)] 
+--           , vtlDesiredModels :: [String]
+--           , vtlEstimates     :: Estimates
+--           , vtlOutputKluge   :: (Estimates, [String])
+--           }
+--           deriving (Show)
+
+-- toVTLoaded :: VandelayTemplate -> EIO String VTLoaded
+-- toVTLoaded vt = do
+--   config <- return (configuration vt)
+--   dms    <- hoistEither (safeGetDesiredModels config)
+--   df     <- hoistEither (safeGetDatafile config)
+--   est    <- readEstimatesEIO (df)
+
+--   return VTLoaded{ vtlTable         = table vt
+--                  , vtlSubstitutions = substitutions vt
+--                  , vtlDesiredModels = dms
+--                  , vtlEstimates     = est
+--                  , vtlOutputKluge   = (est, dms)
+--                  }
 
 
 
@@ -93,28 +97,6 @@ data Configuration =
 blankConfiguration = Configuration (Last Nothing) (Last Nothing) (Last Nothing)
 
 
-safeGetDatafile      :: Configuration -> Either String String 
-safeGetDesiredModels :: Configuration -> Either String [String] 
-safeGetTexfile       :: Configuration -> Either String String 
-safeGetDatafile       = safeGetFromConfiguration datafile "Data file not specified"
-safeGetDesiredModels  = safeGetFromConfiguration desiredModels "Models not specified"
-safeGetTexfile        = safeGetFromConfiguration texfile "Output tex file not specified"
-
-safeGetFromConfiguration :: (Configuration -> Last a) -- accessor function
-                         -> String -- error message
-                         -> Configuration 
-                         -> Either String a -- safe accessor
-safeGetFromConfiguration f e c | unspecified = Left $ e
-                               | otherwise   = Right $ fromJust d
-  where unspecified = isNothing d
-        d           = getLast . f $ c 
-
-
-
-
-
-
-
 instance Monoid Configuration where
   mempty = blankConfiguration
   mappend ca cb   
@@ -123,12 +105,31 @@ instance Monoid Configuration where
                     , texfile       = texfile  ca      <> texfile  cb
                     }
 
-
-
-
-
 -- Table Commands
 data TableCommand = Latex    String
                   | Template String
                   | Data     OutputRequest
                   deriving (Show)
+
+
+
+
+
+
+
+safeGetDatafile      :: VandelayTemplate -> Either String String 
+safeGetDesiredModels :: VandelayTemplate -> Either String [String] 
+safeGetTexfile       :: VandelayTemplate -> Either String String 
+safeGetDatafile       = safeGetFromConfiguration datafile "Data file not specified"
+safeGetDesiredModels  = safeGetFromConfiguration desiredModels "Models not specified"
+safeGetTexfile        = safeGetFromConfiguration texfile "Output tex file not specified"
+
+safeGetFromConfiguration :: (Configuration -> Last a) -- accessor function
+                         -> String -- error message
+                         -> VandelayTemplate 
+                         -> Either String a -- safe accessor
+safeGetFromConfiguration f e vt | unspecified = Left $ e
+                                | otherwise   = Right $ fromJust d
+  where unspecified = isNothing d
+        d           = getLast . f . configuration $ vt
+

@@ -26,8 +26,10 @@ import App.Vandelay.Estimates.Types
 
 readTemplateEIO :: String  -- File name
                  -> EIO String VandelayTemplate
-readTemplateEIO f = 
-  safeReadFileWithError f "Estimates file" >>= hoistEither . parseTemplate
+readTemplateEIO f = do
+  template <- safeReadFileWithError f "Estimates file" >>= hoistEither . parseTemplate
+  loadEstimates template
+
   -- case parse tablefile "Table parsing error: " txt of 
   --   Left  err -> left  $ show err
   --   Right vt  -> right $ vt

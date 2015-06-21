@@ -49,7 +49,7 @@ type DataFileContents = String
 
 
 askPath :: InitMonad DataFilePath
-askPath = liftM fst ask
+askPath = asks fst -- liftM fst ask
   where fst (a,_,_) = a
 
 askContents :: InitMonad DataFileContents

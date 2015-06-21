@@ -2,22 +2,17 @@ module App.Vandelay.Estimates.Output
   ( outputRow
   ) where  
 
--- import Debug.Trace
-
-import App.Vandelay.Text 
-import App.Vandelay.Types
-import App.Vandelay.Estimates.Types
 import Data.List
 import Data.Maybe
 import Data.Monoid
 
--- import App.Vandelay.Estimates.Parser
--- import Control.Monad
--- import Control.Monad.IO.Class
+import App.Vandelay.Text 
+import App.Vandelay.Types
+import App.Vandelay.Estimates.Types
 
 
 outputRow :: OutputRequest -- Output request
-          -> (Estimates, [String])     -- Estimates, [Models]
+          -> (Estimates, [String])     --  [Models]
           -> Either String String 
 outputRow  or (est, ms) = do
   midx   <- getModelIndices ms est
@@ -29,8 +24,6 @@ outputRow  or (est, ms) = do
   Right $ joinAmps ( getOName or : -- Name     
                    (map (\s -> prefix ++ s ++ postfix) . map (texify (getOFormat or)) $ result)) --------Formatted   Values   -------
           ++ "\\\\"
-  
-
 
 combineCoeffCellItems :: [[Cell]]
                       -> Int

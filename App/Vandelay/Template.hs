@@ -1,32 +1,10 @@
 module App.Vandelay.Template
-  ( 
-  -- Reexports: App.Vandelay.Template.Types
-    VandelayTemplate(..)
-  , Configuration(..)
-  , blankConfiguration
-
-  , TableCommand(..)
-  -- , DataCommand(..)
-
-  , VTLoaded(..)
-  , toVTLoaded
-
-  , safeGetDatafile
-  , safeGetDesiredModels
-  , safeGetTexfile
-
-
-  -- , createOutputRequest
-  -- , OutputRequest(..)
-
-  -- Reexports: App.Vandelay.Template.Parser
-  , readTemplateEIO
-
+  ( module App.Vandelay.Template.Types
+  , module App.Vandelay.Template.Parser
   ) where
 
 import App.Vandelay.Template.Types
 import App.Vandelay.Template.Parser
-import App.Vandelay.Types
 
 
 
