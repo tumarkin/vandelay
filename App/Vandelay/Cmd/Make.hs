@@ -1,68 +1,51 @@
-{-# LANGUAGE OverloadedStrings #-}
-
-module App.Vandelay.Cmd.Make 
+module App.Vandelay.Cmd.Make
   ( makeTable
   ) where
 
+import Control.Monad
+import Control.Monad.Trans.Class
+import Control.Monad.Trans.RWS
 
 import App.Vandelay.Estimates
 import App.Vandelay.IO
+import App.Vandelay.Template
 import App.Vandelay.Text 
 import App.Vandelay.Types
-import App.Vandelay.Template
-import Control.Monad
-import Control.Monad.IO.Class
-import Control.Monad.Trans.Either
-import Data.Maybe
-import Data.Monoid
-import qualified Data.Text as T
-
 
 
 makeTable :: String -> EIO String () -- String, Handle)
-makeTable template 
-    = readTemplateEIO template
-  >>= \vt     -> return (configuration vt)
-  >>= \config -> hoistEither (safeGetDatafile config)
-  >>= \df     -> readEstimatesEIO (unpack df)
-  >>= \est    -> createOutput vt est
-  >>= \res    -> safeWriteFile (getLast . texfile $ config) (pack . unlines $ res)
-  >>  return ()
+makeTable templatePath = do 
+  template  <- readTemplateEIO templatePath
+  outFile   <- hoistEither . safeGetTexfile . configuration $ template
+  (_,_,res) <- runMakeMonad createOutput =<< toVTLoaded template
+
+  safeWriteFile (Just outFile) res
 
 
---- Internal functions 
-createOutput :: VandelayTemplate 
-             -> Estimates 
-             -> EitherT String IO [String]
-createOutput vt est = 
-  mapM (doTableCommand vt est) cmds
-    where 
-  config = configuration vt
-  cmds   = table vt
+--- Internal data types 
+type MakeMonad = RWST VTLoaded String () (EIO String)
 
+runMakeMonad mm vtl = runRWST mm vtl () 
 
+askTable :: MakeMonad [TableCommand]
+askTable = liftM vtlTable ask
 
-doTableCommand :: VandelayTemplate 
-               -> Estimates 
-               -> TableCommand 
-               -> EitherT String IO String
+askOutputKluge :: MakeMonad (Estimates, [String])
+askOutputKluge =  liftM vtlOutputKluge ask 
 
-doTableCommand vt est (Latex l)          = right $ unpack l ++ "\\\\"
-doTableCommand vt est (Template t)       = safeReadFile (unpack t)
-                                       >>= return . doSubs vt
-doTableCommand vt est (Data   or)        = outputRowEIO est dms or
-                                       >>= \t -> return $ t ++ "\\\\"
-    where
-  config = configuration vt
-  dms    = stripSplitCommas . fromJust . getLast . desiredModels $ config
+askSubstitutions :: MakeMonad [(Text, Text)] 
+askSubstitutions =  liftM vtlSubstitutions ask 
+
+-- Table output creation functions 
+createOutput :: MakeMonad () 
+createOutput =  mapM_ doTableCommand =<< askTable
+
+doTableCommand :: TableCommand -> MakeMonad () 
+doTableCommand (Latex l)          = tellLn $ l ++ "\\\\" 
+doTableCommand (Template t)       = tellLn =<< return doSubstitution `ap` (lift . safeReadFile $ t) `ap` askSubstitutions
+doTableCommand (Data   or)        = tellLn =<< lift . outputRowEIO or =<< askOutputKluge 
 
 
 
-
-doSubs :: VandelayTemplate -> String -> String
-doSubs vt s =
-  unpack $ foldl (\s (a,b) -> T.replace a b s) txt subs
-    where 
-  subs = substitutions vt
-  txt  = pack s
+tellLn s = tell $ s ++ "\n"
 

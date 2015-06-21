@@ -17,7 +17,7 @@ import App.Vandelay.Text
 import App.Vandelay.Types
 import App.Vandelay.Template.Types
 import App.Vandelay.IO
-import App.Vandelay.Estimates.Types (defaultOutputRequest)
+import App.Vandelay.Estimates.Types 
 
 
 
@@ -100,7 +100,7 @@ configCommand =
   
 
 configDataFile = basicCommand "data:" (\p -> blankConfiguration{datafile = Last . Just $ p})
-configModels   = basicCommand "models:" (\p -> blankConfiguration{desiredModels = Last . Just $ p})
+configModels   = basicCommand "models:" (\p -> blankConfiguration{desiredModels = Last . Just . stripSplitCommas$ p})
 configTexfile  = basicCommand "tex:" (\p -> blankConfiguration{texfile = Last . Just $ p})
  
 
@@ -132,45 +132,43 @@ tableStatement =
 
 -- DATA COMMAND
 dataRow      :: GenParser Char UserState (Maybe TableCommand)
-dataCommands :: GenParser Char UserState [DataCommand]
-dataCommand  :: GenParser Char UserState DataCommand
-dataCommand'':: GenParser Char UserState DataCommand
+dataCommands :: GenParser Char UserState [Ordinal OutputRequest]
+dataCommand  :: GenParser Char UserState (Ordinal OutputRequest)
 
 dataRow = do
   d <- dataCommands <* eol
-  lastOr <- getState
-  let or = createOutputRequest lastOr . sort $ d  -- Sort these to ensure the StatLine comes first
+  let or = mconcat $ defaultOutputRequest : sortExtractOrdinal d -- Sort these to ensure the StatLine comes first
   _ <- updateState (\_ -> or)
-  return . Just $ Data or -- (createOutputRequest d)
+  return . Just $ Data or 
 
-dataCommands = sepBy (spaces >> dataCommand'') (char ';')
+dataCommands = sepBy (spaces >> dataCommand) (char ';')
 
-dataCommand = undefined
--- dataCommand =  do 
---   fcn <-  spaces >> dataCommand' 
---   ps  <- many (noneOf ";\n")
---   return $ fcn (stripStr ps)
 
--- dataCommand' = 
---       (try (string "scale:")    >> return Scale)
---   <|> (try (string "surround:") >> return Surround)
---   -- <|> ((string "stat:")         >> return StatLine)
---   <|> (string "name:"           >> return Name) 
---   <|> (string "code:"           >> return Code)
---   -- <|> (string "index:"          >> return Index)
---   <|> (string "format:"         >> return Format)
+dataCommand = 
+   getState >>= \lastOr -> 
+      scale    <$> ( (try (string "scale:")    *> many (noneOf ";\n")))
+  <|> surround <$> ( (try (string "surround:") *> many (noneOf ";\n")))
+  <|> statLine 
+        lastOr <$> ( (     string "stat:")     *> spaces *> int ) 
+  <|> index    <$> ( (     string "index:")    *> spaces *> int ) 
+  <|> name     <$> ( (try (string "name:")     *> many (noneOf ";\n")))
+  <|> code     <$> ( (try (string "code:")     *> many (noneOf ";\n")))
+  <|> format   <$> ( (try (string "format:")   *> many (noneOf ";\n")))
+    where
+  scale t    = undefined
+  statLine 
+       lor i = Ordinal 1 lor{oName     = Last (Just ""), oItemIdx = Last (Just i)}
+  name t     = Ordinal 2 blankOutputRequest{oName     = Last (Just t)}
+  code t     = Ordinal 2 blankOutputRequest{oCoeffs   = Last .Just .stripSplitCommas $ t}
+  index i    = Ordinal 2 blankOutputRequest{oItemIdx  = Last (Just i)}
+  format t   = Ordinal 2 blankOutputRequest{oFormat   = Last (Just t)}
+  surround t = Ordinal 2 blankOutputRequest{oSurround = Last (Just (getSurround t)) }  -- (preStr, postStr)}
 
-dataCommand'' = 
-      Scale . pack    <$> ( (try (string "scale:")    *> many (noneOf ";\n")))
-  <|> Surround . pack <$> ( (try (string "surround:") *> many (noneOf ";\n")))
-  <|> StatLine        <$> ( (     string "stat:")     *> spaces *> int ) 
-  <|> Index           <$> ( (     string "index:")    *> spaces *> int ) 
-  <|> Name . pack     <$> ( (try (string "name:")     *> many (noneOf ";\n")))
-  <|> Code . pack     <$> ( (try (string "code:")     *> many (noneOf ";\n")))
-  <|> Format . pack   <$> ( (try (string "format:")   *> many (noneOf ";\n")))
-  -- <|> (string "name:"           >> return Name) 
-  -- <|> (string "code:"           >> return Code)
-  -- <|> (string "format:"         >> return Format)
+getSurround t = let (preStr:postStr:other) = stripSplitCommas t
+                in (preStr,postStr)
+
+
+
 
 
 
@@ -182,8 +180,6 @@ subDeclaration :: GenParser Char UserState String
 subSection = do 
   _    <- string "substitutions:" *> eol 
   cmds <- manyTillSectionHeader subCommands 
-  -- cmds <- many subCommands 
-  -- _    <- skipMany blankline 
   return $ blankVandelayTemplate{substitutions = cmds}
 
 
@@ -198,12 +194,12 @@ subCommands = do
   s  <- manyTill anyChar eol 
   ss <- many (try (indentedOrBlankLine indentlevel)) 
 
-  return (stripStr name, T.unlines (stripStr s : map stripStr ss))
+  return (pack (stripStr name), pack (unlines (stripStr s : map stripStr ss)))
 
 
 subDeclaration = 
   space1 *> many (noneOf ":\n\r") 
-    <*  ( (char ':') <?> "Colon is needed to declare text source for substitutions.")
+    <*  ( (char ':') <?> "Colon needed to declare text source for substitutions.")
 
 
 
@@ -216,7 +212,7 @@ subDeclaration =
 
 -- Parsec utility functions
 basicCommand :: String 
-                -> (Text -> a) 
+                -> (String -> a) 
                 -> GenParser Char st a
 basicCommand codestr fcn = 
   (string codestr) *> manyTillEol
@@ -251,8 +247,8 @@ parseInt = do
   return $ (pos) -- , (read numStr))
 
 -- Text utility functions
-stripStr :: String -> Text
-stripStr = T.strip . pack 
+stripStr :: String -> String
+stripStr = unpack . T.strip . pack 
 
 
 

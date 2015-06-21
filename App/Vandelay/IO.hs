@@ -25,12 +25,12 @@ safeReadFile :: String -> EIO String String
 safeReadFile f = safeReadFileWithError f "File"
 
 
-safeWriteFile :: Maybe Text -- Optional output filename 
-              -> Text       -- The text to output
+safeWriteFile :: Maybe String -- Optional output filename 
+              -> String       -- The text to output
               -> EIO String ()
 safeWriteFile fo t = do
   h <- safeGetHandle fo
-  liftIO $ (hPutStrLn h (unpack t)) 
+  liftIO $ (hPutStrLn h t) 
            >> safeCloseHandle h
 
 
@@ -39,23 +39,23 @@ safeWriteFile fo t = do
 
 
 
-safeGetHandle :: Maybe Text -> EIO String Handle
+safeGetHandle :: Maybe String -> EIO String Handle
 safeGetHandle Nothing = return stdout 
 safeGetHandle (Just t)= 
-  (liftIO . doesFileExist $ (unpack t))
+  (liftIO . doesFileExist $ t)
   >>= bool (unsafeGetHandle t)  -- Does not exist
            (overwriteHandle t)  -- Exists
 
-overwriteHandle :: Text -> EIO String Handle
+overwriteHandle :: String -> EIO String Handle
 overwriteHandle t = do
-  liftIO . putStrLn $ unwords ["File",unpack t,"exists. Overwrite (y/n)?"]
+  liftIO . putStrLn $ unwords ["File",t,"exists. Overwrite (y/n)?"]
   ans <- liftIO (getLine)
   if ans == "y" then unsafeGetHandle t
                 else left "Execution halted."
 
 
-unsafeGetHandle  :: Text -> EIO String Handle
-unsafeGetHandle t = liftIO $ openFile (unpack t) WriteMode 
+unsafeGetHandle  :: String -> EIO String Handle
+unsafeGetHandle t = liftIO $ openFile (t) WriteMode 
 
 
 

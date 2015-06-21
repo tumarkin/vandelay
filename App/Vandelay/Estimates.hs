@@ -21,6 +21,6 @@ import Control.Monad.Trans.Either
 
 
 
-outputRowEIO est ms or = hoistEither (outputRow est ms or)
+outputRowEIO or (est, ms) = hoistEither (outputRow or (est, ms) )
 
 

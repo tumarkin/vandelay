@@ -2,24 +2,28 @@ module App.Vandelay.Template.Types
   ( VandelayTemplate(..)
   , blankVandelayTemplate
 
+  , VTLoaded(..)
+  , toVTLoaded
+
   , Configuration(..)
   , blankConfiguration
 
   , TableCommand(..)
-  , DataCommand(..)
+
+  -- , DataCommand(..)
 
   , safeGetDatafile
   , safeGetDesiredModels
   , safeGetTexfile
 
-  , createOutputRequest
-  , OutputRequest(..)
+  -- , createOutputRequest
+  -- , OutputRequest(..)
   ) where
 
-import Data.Maybe
-import Data.Monoid
+import App.Vandelay.Estimates
 import App.Vandelay.Estimates.Types
 import App.Vandelay.Text
+import App.Vandelay.Types
 
 import Debug.Trace
 
@@ -30,25 +34,49 @@ import Debug.Trace
 
 data VandelayTemplate =
   VandelayTemplate { configuration :: Configuration
-                , table         :: [TableCommand]
-                , substitutions :: [(Text, Text)] 
-                }
+                   , table         :: [TableCommand]
+                   , substitutions :: [(Text, Text)] 
+                   }
                 deriving (Show)
 
 blankVandelayTemplate = 
   VandelayTemplate { configuration = blankConfiguration
-                , table         = []
-                , substitutions  = []
-                }
+                   , table         = []
+                   , substitutions  = []
+                   }
               
 instance Monoid VandelayTemplate where
   mempty = blankVandelayTemplate
   mappend a b = 
-    VandelayTemplate{ configuration = configuration a `mappend` configuration b
-                 , table         = table a `mappend` table b
-                 , substitutions  = substitutions a `mappend` substitutions b
-                 }
+    VandelayTemplate{ configuration = configuration a <> configuration b
+                    , table         = table a <> table b
+                    , substitutions  = substitutions a <> substitutions b
+                    }
 
+
+-- Klugey fix for vandelay template loading which should be done in the parser
+data VTLoaded =
+  VTLoaded{ vtlTable         :: [TableCommand]
+          , vtlSubstitutions :: [(Text, Text)] 
+          , vtlDesiredModels :: [String]
+          , vtlEstimates     :: Estimates
+          , vtlOutputKluge   :: (Estimates, [String])
+          }
+          deriving (Show)
+
+toVTLoaded :: VandelayTemplate -> EIO String VTLoaded
+toVTLoaded vt = do
+  config <- return (configuration vt)
+  dms    <- hoistEither (safeGetDesiredModels config)
+  df     <- hoistEither (safeGetDatafile config)
+  est    <- readEstimatesEIO (df)
+
+  return VTLoaded{ vtlTable         = table vt
+                 , vtlSubstitutions = substitutions vt
+                 , vtlDesiredModels = dms
+                 , vtlEstimates     = est
+                 , vtlOutputKluge   = (est, dms)
+                 }
 
 
 
@@ -56,18 +84,18 @@ instance Monoid VandelayTemplate where
 
 -- Configuration
 data Configuration = 
-  Configuration { datafile      :: Last Text
-                , desiredModels :: Last Text
-                , texfile       :: Last Text
+  Configuration { datafile      :: Last String
+                , desiredModels :: Last [String]
+                , texfile       :: Last String
                 }
                 deriving (Show)
 
 blankConfiguration = Configuration (Last Nothing) (Last Nothing) (Last Nothing)
 
 
-safeGetDatafile      :: Configuration -> Either String Text 
-safeGetDesiredModels :: Configuration -> Either String Text 
-safeGetTexfile       :: Configuration -> Either String Text 
+safeGetDatafile      :: Configuration -> Either String String 
+safeGetDesiredModels :: Configuration -> Either String [String] 
+safeGetTexfile       :: Configuration -> Either String String 
 safeGetDatafile       = safeGetFromConfiguration datafile "Data file not specified"
 safeGetDesiredModels  = safeGetFromConfiguration desiredModels "Models not specified"
 safeGetTexfile        = safeGetFromConfiguration texfile "Output tex file not specified"
@@ -90,9 +118,9 @@ safeGetFromConfiguration f e c | unspecified = Left $ e
 instance Monoid Configuration where
   mempty = blankConfiguration
   mappend ca cb   
-    = Configuration { datafile      = datafile ca `mappend` datafile cb
-                    , desiredModels = desiredModels   ca `mappend` desiredModels   cb
-                    , texfile       = texfile  ca `mappend` texfile  cb
+    = Configuration { datafile      = datafile ca      <> datafile cb
+                    , desiredModels = desiredModels ca <> desiredModels   cb
+                    , texfile       = texfile  ca      <> texfile  cb
                     }
 
 
@@ -100,45 +128,7 @@ instance Monoid Configuration where
 
 
 -- Table Commands
-
-data TableCommand = Latex    Text
-                  | Template Text
+data TableCommand = Latex    String
+                  | Template String
                   | Data     OutputRequest
                   deriving (Show)
-
-data DataCommand = StatLine Int
-                 | Name     Text
-                 | Code     Text
-                 | Index    Int
-                 | Format   Text
-                 | Scale    Text
-                 | Surround Text
-                 deriving (Show, Ord, Eq)
-
-
-
-
-
-
-
-
-
-createOutputRequest :: OutputRequest -- Last complete output request, used for seeding statlines
-                    -> [DataCommand] 
-                    -> OutputRequest
-createOutputRequest lcor dcs = 
-  snd . foldl modifyOutputRequest (lcor, defaultOutputRequest) $ dcs 
-
-modifyOutputRequest :: (OutputRequest, OutputRequest) -- (Last output request, Current output request)
-                    -> DataCommand   
-                    -> (OutputRequest, OutputRequest) -- (Last outputrequest, Resulting output request)
-modifyOutputRequest (lor, or) (StatLine i) = (lor, lor{oName    = "", oItemIdx = i})
-modifyOutputRequest (lor, or) (Name     t) = (lor,  or{oName    = unpack t})
-modifyOutputRequest (lor, or) (Code     t) = (lor,  or{oCoeffs  = stripSplitCommas t})
-modifyOutputRequest (lor, or) (Index    i) = (lor,  or{oItemIdx = i})
-modifyOutputRequest (lor, or) (Format   t) = (lor,  or{oFormat  = unpack t})
-modifyOutputRequest (lor, or) (Scale    t) = error "Scale is not implemented" 
-modifyOutputRequest (lor, or) (Surround t) = (lor,  or{oSurround = (preStr, postStr)})
-    where 
-  (preStr:postStr:other) = stripSplitCommas t
-

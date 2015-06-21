@@ -6,15 +6,18 @@ module App.Vandelay.Template
   , blankConfiguration
 
   , TableCommand(..)
-  , DataCommand(..)
+  -- , DataCommand(..)
+
+  , VTLoaded(..)
+  , toVTLoaded
 
   , safeGetDatafile
   , safeGetDesiredModels
   , safeGetTexfile
 
 
-  , createOutputRequest
-  , OutputRequest(..)
+  -- , createOutputRequest
+  -- , OutputRequest(..)
 
   -- Reexports: App.Vandelay.Template.Parser
   , readTemplateEIO

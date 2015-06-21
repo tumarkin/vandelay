@@ -17,6 +17,8 @@ import Text.ParserCombinators.Parsec hiding (many, optional, (<|>))
 import Text.ParserCombinators.Parsec.Number(floating3)
 
 
+import Text.Parsec.Prim hiding (many, optional, (<|>), try)
+
 -- test :: IO()
 -- test = do
 --   result <- runEitherT $ readEstimatesEIO "test/activity_sample.txt"
@@ -30,8 +32,6 @@ readEstimatesEIO f = do
   case parse estimates "Estimates parsing error: " txt of 
     Left  err -> left $ show err
     Right est -> hoistEither $ validateEstimates est
-
-
 
 
 -- Parser 

@@ -4,8 +4,8 @@ module App.Vandelay.Estimates.Output
 
 -- import Debug.Trace
 
-import App.Vandelay.Latexable
 import App.Vandelay.Text 
+import App.Vandelay.Types
 import App.Vandelay.Estimates.Types
 import Data.List
 import Data.Maybe
@@ -16,19 +16,19 @@ import Data.Monoid
 -- import Control.Monad.IO.Class
 
 
-outputRow :: Estimates     -- Estimates
-          -> [String]      -- Models
-          -> OutputRequest -- Output request
+outputRow :: OutputRequest -- Output request
+          -> (Estimates, [String])     -- Estimates, [Models]
           -> Either String String 
-outputRow  est ms or = do
+outputRow  or (est, ms) = do
   midx   <- getModelIndices ms est
-  coefs  <- getCoefficientCells (oCoeffs or) est
-  result <- mapM (combineCoeffCellItems coefs (oItemIdx or)) midx
+  coefs  <- getCoefficientCells (getOCoeffs or) est
+  result <- mapM (combineCoeffCellItems coefs (getOItemIdx or)) midx
 
-  let (prefix, postfix) = oSurround or
+  let (prefix, postfix) = getOSurround or
 
-  Right $ joinAmps ( oName or : -- Name     
-                   (map (\s -> prefix ++ s ++ postfix) . map (texify (oFormat or)) $ result)) --------Formatted   Values   -------
+  Right $ joinAmps ( getOName or : -- Name     
+                   (map (\s -> prefix ++ s ++ postfix) . map (texify (getOFormat or)) $ result)) --------Formatted   Values   -------
+          ++ "\\\\"
   
 
 

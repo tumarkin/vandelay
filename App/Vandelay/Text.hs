@@ -10,6 +10,7 @@ module App.Vandelay.Text
   , commaPrintf
 
   , stripSplitCommas 
+  , doSubstitution
 
   -- , unlinesTex
 
@@ -61,8 +62,14 @@ joinAmps :: [String] -> String
 joinAmps = intercalate " & " 
 
 
-stripSplitCommas :: Text -> [String]
+stripSplitCommas :: String -> [String]
 stripSplitCommas s = 
-  map (unpack . T.strip). T.splitOn (pack ",") $ s
+  map (unpack . T.strip). T.splitOn (pack ",") $ (pack s)
 
+
+doSubstitution :: String  -- Input String
+               -> [(Text, Text)] -- Substitutions
+               -> String -- Transformed string
+doSubstitution src = 
+  unpack . foldl (\s (a,b) -> T.replace a b s) (pack src)
 

@@ -6,12 +6,24 @@ module App.Vandelay.Estimates.Types
 
   , OutputRequest(..)
   , defaultOutputRequest
+  , blankOutputRequest
+
+  , getOName
+  , getOCoeffs
+  , getOItemIdx
+  , getOFormat
+  , getOSurround
+
+  , setName
+  , setCoeffs
+  , setItemIdx
+  , setFormat
+  , setSurround
 
   ) where  
 
-import App.Vandelay.Latexable
 import App.Vandelay.Text 
-import Data.Monoid
+import App.Vandelay.Types
 
 
 data Estimates  = 
@@ -53,20 +65,51 @@ makeStars i | i == 0    = ""
 -- Output request
 
 data OutputRequest =
-  OutputRequest { oName :: String
-                , oCoeffs             :: [String]
-                , oItemIdx            :: Int
-                , oFormat             :: String
-                , oSurround           :: (String, String)
+  OutputRequest { oName     :: Last String
+                , oCoeffs   :: Last [String]
+                , oItemIdx  :: Last Int
+                , oFormat   :: Last String
+                , oSurround :: Last (String, String)
                 }
-                deriving (Show)
+                deriving (Show, Ord, Eq)
+
+getOName     = fromJust . getLast . oName
+getOCoeffs   = fromJust . getLast . oCoeffs
+getOItemIdx  = fromJust . getLast . oItemIdx
+getOFormat   = fromJust . getLast . oFormat
+getOSurround = fromJust . getLast . oSurround
 
 defaultOutputRequest =
-  OutputRequest { oName     = ""
-                , oCoeffs   = []
-                , oItemIdx  = 0
-                , oFormat   = "%1.3f"
-                , oSurround = ("", "")
+  OutputRequest { oName     = Last $ Just ""
+                , oCoeffs   = Last $ Just []
+                , oItemIdx  = Last $ Just 0
+                , oFormat   = Last $ Just "%1.3f"
+                , oSurround = Last $ Just ("", "")
                 }
+
+blankOutputRequest = 
+  OutputRequest { oName     = Last Nothing
+                , oCoeffs   = Last Nothing
+                , oItemIdx  = Last Nothing
+                , oFormat   = Last Nothing
+                , oSurround = Last Nothing
+                }
+
+instance Monoid OutputRequest where
+  mempty  = blankOutputRequest
+  mappend a b = 
+    OutputRequest { oName     = oName     a <> oName     b 
+                  , oCoeffs   = oCoeffs   a <> oCoeffs   b 
+                  , oItemIdx  = oItemIdx  a <> oItemIdx  b 
+                  , oFormat   = oFormat   a <> oFormat   b 
+                  , oSurround = oSurround a <> oSurround b 
+                  }
+  
+setName    t      = blankOutputRequest{oName = Last . Just $ t}
+setCoeffs cs      = blankOutputRequest{oCoeffs = Last . Just $ cs}
+setItemIdx i      = blankOutputRequest{oItemIdx = Last . Just $ i}
+setFormat t       = blankOutputRequest{oFormat = Last . Just $ t}
+setSurround (l,r) = blankOutputRequest{oSurround = Last . Just $ (l,r)}
+
 
 
