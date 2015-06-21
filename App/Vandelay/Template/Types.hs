@@ -58,34 +58,6 @@ loadEstimates vt = do
   return vt{estimates = Just est}
 
 
--- -- Klugey fix for vandelay template loading which should be done in the parser
--- data VTLoaded =
---   VTLoaded{ vtlTable         :: [TableCommand]
---           , vtlSubstitutions :: [(Text, Text)] 
---           , vtlDesiredModels :: [String]
---           , vtlEstimates     :: Estimates
---           , vtlOutputKluge   :: (Estimates, [String])
---           }
---           deriving (Show)
-
--- toVTLoaded :: VandelayTemplate -> EIO String VTLoaded
--- toVTLoaded vt = do
---   config <- return (configuration vt)
---   dms    <- hoistEither (safeGetDesiredModels config)
---   df     <- hoistEither (safeGetDatafile config)
---   est    <- readEstimatesEIO (df)
-
---   return VTLoaded{ vtlTable         = table vt
---                  , vtlSubstitutions = substitutions vt
---                  , vtlDesiredModels = dms
---                  , vtlEstimates     = est
---                  , vtlOutputKluge   = (est, dms)
---                  }
-
-
-
-
-
 -- Configuration
 data Configuration = 
   Configuration { datafile      :: Last String
