@@ -1,10 +1,11 @@
-module App.Vandelay.Cmd.Make
+module App.Vandelay.Cmd.Make                                      
   ( makeTable
   ) where
 
 import Control.Monad
 import Control.Monad.Trans.Class
 import Control.Monad.Trans.RWS
+import Control.Monad.Trans.Either
 
 import App.Vandelay.Estimates
 import App.Vandelay.IO
@@ -32,14 +33,8 @@ askTable = asks table
 
 
 askDesiredModels :: MakeMonad [String]
-askDesiredModels = do
-  vt <- ask
-  dms  <- lift . hoistEither $ safeGetDesiredModels vt
-  return dms
+askDesiredModels = lift . hoistEither . safeGetDesiredModels =<< ask
 
--- This is super klugey and should be fixed
-askOutputKluge :: MakeMonad (Estimates, [String])
-askOutputKluge =  return (,) `ap` askEstimates `ap`  askDesiredModels
 
 askSubstitutions :: MakeMonad [(Text, Text)] 
 askSubstitutions =  asks substitutions
@@ -52,12 +47,13 @@ createOutput :: MakeMonad ()
 createOutput =  mapM_ doTableCommand =<< askTable
 
 doTableCommand :: TableCommand -> MakeMonad () 
-doTableCommand (Latex l)          = tellLn $ l ++ "\\\\" 
-doTableCommand (Template t)       = tellLn =<< return doSubstitution `ap` (lift . safeReadFile $ t) `ap` askSubstitutions
-doTableCommand (Data   or)        = tellLn =<< lift . outputRowEIO or =<< askOutputKluge 
-
-
-
+doTableCommand (Latex l)    = tellLn $ l ++ "\\\\" 
+doTableCommand (Template t) = tellLn =<< return doSubstitution `ap` (lift . safeReadFile $ t) `ap` askSubstitutions
+-- doTableCommand (Data   or)  = tellLn =<< lift =<< return (outputRowEIO) `ap` return or `ap` askEstimates `ap` askDesiredModels
+doTableCommand (Data   or)  = tellLn =<< lift . hoistEither =<< return (outputRow) `ap` return or `ap` askEstimates `ap` askDesiredModels
+                                                                -- Gives a Monad (Either String String) 
+                                      --  MakeMonadEither <- Either T <- Either String String 
 
 tellLn s = tell $ s ++ "\n"
+
 

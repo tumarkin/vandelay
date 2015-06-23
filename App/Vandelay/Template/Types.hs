@@ -3,9 +3,6 @@ module App.Vandelay.Template.Types
   , blankVandelayTemplate
   , loadEstimates
 
-  -- , VTLoaded(..)
-  -- , toVTLoaded
-
   , Configuration(..)
   , blankConfiguration
 
@@ -55,7 +52,7 @@ instance Monoid VandelayTemplate where
 loadEstimates :: VandelayTemplate -> EIO String VandelayTemplate
 loadEstimates vt = do 
   est    <- readEstimatesEIO =<< hoistEither (safeGetDatafile vt)
-  return vt{estimates = Just est}
+  return vt{estimates = Just $ est}
 
 
 -- Configuration

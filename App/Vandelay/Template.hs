@@ -1,10 +1,10 @@
 module App.Vandelay.Template
   ( module App.Vandelay.Template.Types
-  , module App.Vandelay.Template.Parser
+  , module App.Vandelay.Template.ParserT
   ) where
 
 import App.Vandelay.Template.Types
-import App.Vandelay.Template.Parser
+import App.Vandelay.Template.ParserT
 
 
 

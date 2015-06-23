@@ -11,10 +11,12 @@ import App.Vandelay.Types
 import App.Vandelay.Estimates.Types
 
 
+
 outputRow :: OutputRequest -- Output request
-          -> (Estimates, [String])     --  [Models]
+          -> Estimates
+          -> [String]     --  [Models]
           -> Either String String 
-outputRow  or (est, ms) = do
+outputRow  or est ms = do
   midx   <- getModelIndices ms est
   coefs  <- getCoefficientCells (getOCoeffs or) est
   result <- mapM (combineCoeffCellItems coefs (getOItemIdx or)) midx
@@ -30,8 +32,7 @@ combineCoeffCellItems :: [[Cell]]
                       -> Int
                       -> Either String DataItem
 combineCoeffCellItems  cells itemidx modelidx = 
-      mapM (safeCellLookup itemidx) cellsForModels -- either string [dataitem]
-  >>= return . mconcat
+  return . mconcat =<< mapM (safeCellLookup itemidx) cellsForModels -- either string [dataitem]
     where 
   cellsForModels = map (!! modelidx) $ cells
 
@@ -64,22 +65,5 @@ getCoefficientCells cnames est | missingcoefs /= [] = Left  $ "Coefficient(s): "
 
 
  
-
-
-
--- Debugging
--- e = Estimates 
---   { models = ["total_act_ret_uv","total_act_ret_mv","board_act_ret_uv","board_act_ret_mv"]
---   , coefficients = 
---       [ ("ann_return",[[ValData (-6.5280000000000005) 3,ValData (-8.514) 0],[ValData (-4.864) 3,ValData (-7.007) 0],[ValData (-4.338) 3,ValData (-7.665) 0],[ValData (-3.484) 3,ValData (-6.744) 0]])
---       , ("log_board_size",[[BlankData,BlankData],[ValData 92.1 3,ValData 40.598 0],[BlankData,BlankData],[ValData 60.179 3,ValData 40.696 0]])
---       ]
---    }
-
-
--- outreq = defaultOutputRequest{oName="Variable", oCoeffs=["log_board_size","ann_return"]} 
--- ms = ["board_act_ret_uv","total_act_ret_mv"]
-
--- debug = outputRow e ms outreq 
 
 
