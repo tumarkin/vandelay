@@ -5,6 +5,7 @@ module App.Vandelay.Template.ParserT
 import Control.Applicative 
 import Control.Monad 
 import Control.Monad.Trans.Either
+import Control.Monad.Trans.Class
 import Data.List
 import Data.List (sort)
 import Data.Maybe
@@ -35,16 +36,17 @@ readTemplateEIO f = do
                   True -> traceShow e $ (left $ show e)
                   False -> left $ show e 
     Right r -> case traceControl of
-                  True -> traceShow r $ (loadEstimates r)
-                  False -> (loadEstimates r)
+                  True -> traceShow r $ right r
+                  False -> right r 
     -- Left  parseErr -> left $ show parseErr
     -- Right t        -> right $ t
 
 
 
 --- Parser
+type TemplateParser    = ParsecT String UserState (EIO String)
+
 type LastOutputRequest = OutputRequest
-type TemplateParser = ParsecT String UserState (EIO String)
 type UserState         = LastOutputRequest
 
 
@@ -86,12 +88,18 @@ configLine =
 
 configCommand = 
       configDataFile 
-  <|> configModels   
+  <|> configModels
   <|> configTexfile  
   <?> "Invalid configuration command. Valid commands are \"data:\", \"models:\", and \"tex:\"."
   
 
-configDataFile = basicCommand "data:" (\p -> blankConfiguration{datafile = Last . Just $ p})
+configDataFile = do 
+  filePath <- (string "data" *> manyTillEol)
+  est      <- lift . readEstimatesEIO $ filePath
+  return blankConfiguration{estimates = Last . Just $ est }
+
+
+-- error "configDataFile not defined" -- basicCommand "data:" (\p -> blankConfiguration{datafile = Last . Just $ p})
 configModels   = basicCommand "models:" (\p -> blankConfiguration{desiredModels = Last . Just . stripSplitCommas$ p})
 configTexfile  = basicCommand "tex:" (\p -> blankConfiguration{texfile = Last . Just $ p})
  

@@ -35,12 +35,12 @@
   (major1) == 0 && (major2) <  11 || \
   (major1) == 0 && (major2) == 11 && (minor) <= 0)
 
-/* package parsec-3.1.9 */
-#define VERSION_parsec "3.1.9"
+/* package parsec-3.1.1 */
+#define VERSION_parsec "3.1.1"
 #define MIN_VERSION_parsec(major1,major2,minor) (\
   (major1) <  3 || \
   (major1) == 3 && (major2) <  1 || \
-  (major1) == 3 && (major2) == 1 && (minor) <= 9)
+  (major1) == 3 && (major2) == 1 && (minor) <= 1)
 
 /* package parsec-numbers-0.1.0 */
 #define VERSION_parsec_numbers "0.1.0"

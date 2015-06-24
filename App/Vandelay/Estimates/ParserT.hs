@@ -9,7 +9,7 @@ import App.Vandelay.IO
 import App.Vandelay.Types
 import App.Vandelay.Text
 
-import Control.Applicative 
+import Control.Applicative
 import Control.Monad.Trans.Either
 import Data.List
 import Text.Parsec hiding (many, optional, (<|>))
@@ -50,9 +50,9 @@ cell :: EstParser DataItem
 cell =  try numberCell <|> emptyCell <|> textCell
 
 
---- 
+---
 coefcmd =  try adddata 
-        <|> newcoef
+       <|> newcoef
 
 adddata = manyTill space (lookAhead (tab <|> (eol >> return ' '))) >> return AddData
 newcoef = NewCoef <$> many (noneOf "\t\n\r")
@@ -91,7 +91,7 @@ sigStars = length <$> many (char '*')
 
 -- Parser tools
 eol :: EstParser String
-eol = try (string "\n\r") 
+eol =  try (string "\n\r")
    <|> try (string "\r\n")
    <|> string "\n"
    <|> string "\r"

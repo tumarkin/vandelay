@@ -1,33 +1,33 @@
 module App.Vandelay.Template.Types
   ( VandelayTemplate(..)
   , blankVandelayTemplate
-  , loadEstimates
 
   , Configuration(..)
   , blankConfiguration
 
   , TableCommand(..)
 
-  , safeGetDatafile
   , safeGetDesiredModels
   , safeGetTexfile
-
+  , safeGetEstimates
 
   ) where
 
 -- import App.Vandelay.Estimates
 import App.Vandelay.Estimates.Types
-import App.Vandelay.Estimates.Parser
+import App.Vandelay.Estimates.ParserT
 import App.Vandelay.Text
 import App.Vandelay.Types
 
 
 -- Vandalay Template 
 data VandelayTemplate =
-  VandelayTemplate { configuration :: Configuration
-                   , table         :: [TableCommand]
+  VandelayTemplate { --configuration :: Configuration
+                     table         :: [TableCommand]
                    , substitutions :: [(Text, Text)] 
-                   , estimates     :: Maybe Estimates
+                   , desiredModels :: Last [String]
+                   , texfile       :: Last String
+                   , estimates     :: Last Estimates 
                    }
                 deriving (Show)
 
@@ -35,7 +35,6 @@ blankVandelayTemplate =
   VandelayTemplate { configuration = blankConfiguration
                    , table         = []
                    , substitutions = []
-                   , estimates     = Nothing
                    }
               
 instance Monoid VandelayTemplate where
@@ -44,22 +43,21 @@ instance Monoid VandelayTemplate where
     VandelayTemplate{ configuration = configuration a <> configuration b
                     , table         = table a <> table b
                     , substitutions = substitutions a <> substitutions b
-                    , estimates     = Nothing
                     }
 
 
 
-loadEstimates :: VandelayTemplate -> EIO String VandelayTemplate
-loadEstimates vt = do 
-  est    <- readEstimatesEIO =<< hoistEither (safeGetDatafile vt)
-  return vt{estimates = Just $ est}
+-- loadEstimates :: VandelayTemplate -> EIO String VandelayTemplate
+-- loadEstimates vt = do 
+--   est    <- readEstimatesEIO =<< hoistEither (safeGetDatafile vt)
+--   return vt{estimates = Last . Just $ est}
 
 
 -- Configuration
 data Configuration = 
-  Configuration { datafile      :: Last String
-                , desiredModels :: Last [String]
+  Configuration { desiredModels :: Last [String]
                 , texfile       :: Last String
+                , estimates     :: Last Estimates
                 }
                 deriving (Show)
 
@@ -69,9 +67,9 @@ blankConfiguration = Configuration (Last Nothing) (Last Nothing) (Last Nothing)
 instance Monoid Configuration where
   mempty = blankConfiguration
   mappend ca cb   
-    = Configuration { datafile      = datafile ca      <> datafile cb
-                    , desiredModels = desiredModels ca <> desiredModels   cb
+    = Configuration { desiredModels = desiredModels ca <> desiredModels   cb
                     , texfile       = texfile  ca      <> texfile  cb
+                    , estimates     = estimates ca     <> estimates cb
                     }
 
 -- Table Commands
@@ -85,11 +83,14 @@ data TableCommand = Latex    String
 
 
 
+safeGetEstimates     :: VandelayTemplate -> Either String Estimates
+safeGetEstimates vt = 
+  case (getLast . estimates . configuration$ vt) of 
+    Nothing -> Left "No Estimate file specified"
+    Just e  -> Right e
 
-safeGetDatafile      :: VandelayTemplate -> Either String String 
 safeGetDesiredModels :: VandelayTemplate -> Either String [String] 
 safeGetTexfile       :: VandelayTemplate -> Either String String 
-safeGetDatafile       = safeGetFromConfiguration datafile "Data file not specified"
 safeGetDesiredModels  = safeGetFromConfiguration desiredModels "Models not specified"
 safeGetTexfile        = safeGetFromConfiguration texfile "Output tex file not specified"
 

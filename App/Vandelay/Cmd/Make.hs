@@ -40,7 +40,7 @@ askSubstitutions :: MakeMonad [(Text, Text)]
 askSubstitutions =  asks substitutions
 
 askEstimates :: MakeMonad Estimates
-askEstimates =  asks (fromJust . estimates) 
+askEstimates =  lift . hoistEither . safeGetEstimates =<< ask
 
 -- Table output creation functions 
 createOutput :: MakeMonad () 
