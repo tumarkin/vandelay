@@ -1,12 +1,10 @@
-module App.Vandelay.Estimates
-  ( module App.Vandelay.Estimates.Types 
-  , module App.Vandelay.Estimates.ParserT
-  , module App.Vandelay.Estimates.Output
+module App.Vandelay.Estimates 
+  ( module X
   ) where  
 
-import App.Vandelay.Estimates.Types
-import App.Vandelay.Estimates.ParserT
-import App.Vandelay.Estimates.Output
+import App.Vandelay.Estimates.Types   as X
+import App.Vandelay.Estimates.ParserT as X
+import App.Vandelay.Estimates.Output  as X
 
 
 

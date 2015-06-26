@@ -17,9 +17,8 @@ import System.IO
 safeReadFileWithError :: String -> String -> EIO String String
 safeReadFileWithError f e = do 
   exists <- liftIO . doesFileExist $ f
-  case exists of 
-    True  -> liftIO (readFile f) 
-    False -> left $ unwords [e,f,"not found."]
+  if exists then liftIO (readFile f) 
+            else left $ unwords [e,f,"not found."]
 
 safeReadFile :: String -> EIO String String
 safeReadFile f = safeReadFileWithError f "File"
@@ -30,8 +29,7 @@ safeWriteFile :: Maybe String -- Optional output filename
               -> EIO String ()
 safeWriteFile fo t = do
   h <- safeGetHandle fo
-  liftIO $ (hPutStrLn h t) 
-           >> safeCloseHandle h
+  liftIO $ hPutStrLn h t >> safeCloseHandle h
 
 
 
@@ -49,13 +47,13 @@ safeGetHandle (Just t)=
 overwriteHandle :: String -> EIO String Handle
 overwriteHandle t = do
   liftIO . putStrLn $ unwords ["File",t,"exists. Overwrite (y/n)?"]
-  ans <- liftIO (getLine)
+  ans <- liftIO getLine
   if ans == "y" then unsafeGetHandle t
                 else left "Execution halted."
 
 
 unsafeGetHandle  :: String -> EIO String Handle
-unsafeGetHandle t = liftIO $ openFile (t) WriteMode 
+unsafeGetHandle t = liftIO $ openFile t WriteMode 
 
 
 

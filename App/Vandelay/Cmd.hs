@@ -1,12 +1,6 @@
 module App.Vandelay.Cmd
-  
-  -- Reexports from Init
-  ( initTemplate
-  , SortOptions(..)
-
-  -- Reexports from Make
-  , makeTable
+  ( module X 
   ) where
 
-import App.Vandelay.Cmd.Init
-import App.Vandelay.Cmd.Make
+import App.Vandelay.Cmd.Init as X
+import App.Vandelay.Cmd.Make as X

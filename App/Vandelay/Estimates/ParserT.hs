@@ -23,34 +23,36 @@ readEstimatesEIO :: String  -- File name
                  -> EitherT String IO Estimates
 readEstimatesEIO f = do
   txt <- safeReadFileWithError f "Estimates file"
-  r   <- runParserT estimates () ("Estimates file: " ++ f) txt 
+  r   <- runParserT (estimates f) () ("Estimates file: " ++ f) txt 
   case r of 
     Left  parseErr -> left $ show parseErr
-    Right est       -> right $ est 
+    Right est       -> right est 
 
 
 -- Parser 
-estimates :: EstParser Estimates
-estimates = do 
+estimates :: String -- Filename
+          -> EstParser Estimates
+estimates fileName = do 
   models <- header 
-
   let numCols = length models 
   rows   <- many (rowOfLength numCols <* eol)
 
-  return $ Estimates models (formCoeffs rows)
+  return $ Estimates fileName models (formCoeffs rows)
 
 
+
+-- Header 
 header :: EstParser [String]  
 header = tail <$> (sepBy (many (noneOf "\n\r\t") ) tab <* eol)
 
+-- Data row
 rowOfLength :: Int -> EstParser (CoefCmd, [DataItem])
-rowOfLength i = (,) <$> (coefcmd <* tab) <*> (sepByN i cell tab)
+rowOfLength i = (,) <$> (coefcmd <* tab) <*> sepByN i cell tab
 
 cell :: EstParser DataItem
 cell =  try numberCell <|> emptyCell <|> textCell
 
-
----
+-- Coefficient commands
 coefcmd =  try adddata 
        <|> newcoef
 
@@ -58,6 +60,7 @@ adddata = manyTill space (lookAhead (tab <|> (eol >> return ' '))) >> return Add
 newcoef = NewCoef <$> many (noneOf "\t\n\r")
 
 
+-- DataItems
 textCell :: EstParser DataItem
 textCell = StrData <$> many (noneOf "\t\n\r") 
 
@@ -80,13 +83,8 @@ unsignedNumber =  try (read3 <$> many1 digit <*> string "." <*> many1 digit)
     where 
   read3 a b c = read (a++b++c)
 
-
 sigStars :: EstParser Int
 sigStars = length <$> many (char '*')
-
-
-
-
 
 
 -- Parser tools
@@ -102,14 +100,13 @@ sepByN :: Int
        -> EstParser sep
        -> EstParser [a]
 sepByN 1 p sep = (:) <$>  p         <*> pure []
-sepByN n p sep = (:) <$> (p <* sep) <*> (sepByN (n-1) p sep)
+sepByN n p sep = (:) <$> (p <* sep) <*> sepByN (n-1) p sep
 
 
 
 
 
 -- Make coefficients from the individual rows
-
 formCoeffs :: [ (CoefCmd,[DataItem]) ] -> [Coeff]
 formCoeffs cs = formCoeffs' cs (Nothing ,[]) 
 
@@ -124,20 +121,18 @@ formCoeffs' (    (AddData, d):ccs) (Just cur,coefs)  = formCoeffs' ccs (Just (co
 
 
 makeNewCoef :: (CoefCmd, [DataItem]) -> Coeff
-makeNewCoef (NewCoef n, is) = (n, listToListOfLists is)
-
-
+makeNewCoef (NewCoef n, is) = Coeff n (listToListOfLists is)
 
 combineData :: Coeff -> [DataItem] -> Coeff
-combineData (name,cells) ds = (name, zipWith (++) cells (listToListOfLists ds))
+combineData c ds = c{cCells = zipWith (++) (cCells c) (listToListOfLists ds)}
 
 
-listToListOfLists = map (\x -> [x])
+listToListOfLists = map (:[]) 
 
 
 -- Data integrity
 validateEstimates :: Estimates -> Either String Estimates
-validateEstimates est | dupmodels == [] = Right est
+validateEstimates est | null dupmodels = Right est
                       | otherwise      = Left $ "Duplicate estimation results: " ++ error
     where 
   dupmodels = map head . filter (\x -> length x > 1) . group . sort . models $ est

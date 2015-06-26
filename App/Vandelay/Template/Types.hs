@@ -2,8 +2,8 @@ module App.Vandelay.Template.Types
   ( VandelayTemplate(..)
   , blankVandelayTemplate
 
-  , Configuration(..)
-  , blankConfiguration
+  -- , Configuration(..)
+  -- , blankConfiguration
 
   , TableCommand(..)
 
@@ -22,17 +22,18 @@ import App.Vandelay.Types
 
 -- Vandalay Template 
 data VandelayTemplate =
-  VandelayTemplate { --configuration :: Configuration
-                     table         :: [TableCommand]
-                   , substitutions :: [(Text, Text)] 
-                   , desiredModels :: Last [String]
+  VandelayTemplate { desiredModels :: Last [String]
                    , texfile       :: Last String
-                   , estimates     :: Last Estimates 
+                   , estimates     :: [Estimates]
+                   , table         :: [TableCommand]
+                   , substitutions :: [(Text, Text)] 
                    }
                 deriving (Show)
 
 blankVandelayTemplate = 
-  VandelayTemplate { configuration = blankConfiguration
+  VandelayTemplate { desiredModels = Last Nothing
+                   , texfile       = Last Nothing
+                   , estimates     = []
                    , table         = []
                    , substitutions = []
                    }
@@ -40,37 +41,13 @@ blankVandelayTemplate =
 instance Monoid VandelayTemplate where
   mempty = blankVandelayTemplate
   mappend a b = 
-    VandelayTemplate{ configuration = configuration a <> configuration b
+    VandelayTemplate{ desiredModels = desiredModels a <> desiredModels b
+                    , texfile       = texfile a <> texfile b
+                    , estimates     = estimates a <> estimates b
                     , table         = table a <> table b
                     , substitutions = substitutions a <> substitutions b
                     }
 
-
-
--- loadEstimates :: VandelayTemplate -> EIO String VandelayTemplate
--- loadEstimates vt = do 
---   est    <- readEstimatesEIO =<< hoistEither (safeGetDatafile vt)
---   return vt{estimates = Last . Just $ est}
-
-
--- Configuration
-data Configuration = 
-  Configuration { desiredModels :: Last [String]
-                , texfile       :: Last String
-                , estimates     :: Last Estimates
-                }
-                deriving (Show)
-
-blankConfiguration = Configuration (Last Nothing) (Last Nothing) (Last Nothing)
-
-
-instance Monoid Configuration where
-  mempty = blankConfiguration
-  mappend ca cb   
-    = Configuration { desiredModels = desiredModels ca <> desiredModels   cb
-                    , texfile       = texfile  ca      <> texfile  cb
-                    , estimates     = estimates ca     <> estimates cb
-                    }
 
 -- Table Commands
 data TableCommand = Latex    String
@@ -80,26 +57,23 @@ data TableCommand = Latex    String
 
 
 
-
-
-
-safeGetEstimates     :: VandelayTemplate -> Either String Estimates
-safeGetEstimates vt = 
-  case (getLast . estimates . configuration$ vt) of 
-    Nothing -> Left "No Estimate file specified"
-    Just e  -> Right e
+-- Safe Accessors
 
 safeGetDesiredModels :: VandelayTemplate -> Either String [String] 
 safeGetTexfile       :: VandelayTemplate -> Either String String 
-safeGetDesiredModels  = safeGetFromConfiguration desiredModels "Models not specified"
-safeGetTexfile        = safeGetFromConfiguration texfile "Output tex file not specified"
+safeGetEstimates     :: VandelayTemplate -> Either String [Estimates]
 
-safeGetFromConfiguration :: (Configuration -> Last a) -- accessor function
-                         -> String -- error message
-                         -> VandelayTemplate 
-                         -> Either String a -- safe accessor
-safeGetFromConfiguration f e vt | unspecified = Left $ e
-                                | otherwise   = Right $ fromJust d
+safeGetDesiredModels  = safeGetFromTemplate desiredModels "Models not specified"
+safeGetTexfile        = safeGetFromTemplate texfile "Output tex file not specified"
+
+safeGetFromTemplate :: (VandelayTemplate -> Last a) -- accessor function
+                       -> String -- error message
+                       -> VandelayTemplate 
+                       -> Either String a -- safe accessor
+safeGetFromTemplate f e vt | unspecified = Left e
+                           | otherwise   = Right $ fromJust d
   where unspecified = isNothing d
-        d           = getLast . f . configuration $ vt
+        d           = getLast . f $ vt
 
+safeGetEstimates vt | null . estimates $ vt = Left "Estimate file not specified"
+                    | otherwise             = Right $ estimates vt

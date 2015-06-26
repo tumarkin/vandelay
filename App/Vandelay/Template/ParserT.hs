@@ -7,7 +7,6 @@ import Control.Monad
 import Control.Monad.Trans.Either
 import Control.Monad.Trans.Class
 import Data.List
-import Data.List (sort)
 import Data.Maybe
 import Data.Monoid
 import Text.Parsec hiding (many, optional, (<|>))
@@ -21,7 +20,7 @@ import App.Vandelay.Types
 
 --- Debugging related
 import Debug.Trace
-traceControl = True
+traceControl = False
 
 
 --- External interface
@@ -32,12 +31,10 @@ readTemplateEIO f = do
   t   <- runParserT tablefile defaultOutputRequest ("Template file: " ++ f) txt 
 
   case t of 
-    Left e  -> case traceControl of
-                  True -> traceShow e $ (left $ show e)
-                  False -> left $ show e 
-    Right r -> case traceControl of
-                  True -> traceShow r $ right r
-                  False -> right r 
+    Left e  -> if traceControl then traceShow e $ left (show e)
+                               else left $ show e 
+    Right r -> if traceControl then traceShow r $ right r
+                               else right r 
     -- Left  parseErr -> left $ show parseErr
     -- Right t        -> right $ t
 
@@ -52,8 +49,9 @@ type UserState         = LastOutputRequest
 
 tablefile :: TemplateParser VandelayTemplate
 tablefile = 
-  skipMany blankline *> many section <* eof -- Generates a list of Vandelay templates 
-  >>= return . mconcat                      -- Concates the Vandelay template monoids into a single table
+  -- skipMany blankline *> many section <* eof -- Generates a list of Vandelay templates 
+  -- >>= return . mconcat                      -- Concates the Vandelay template monoids into a single table
+  liftM mconcat (skipMany blankline *> many section <* eof) 
 
 
 section :: TemplateParser VandelayTemplate 
@@ -71,19 +69,19 @@ section =
 
 -- CONFIGURATION SECTION
 configSection  :: TemplateParser VandelayTemplate
-configLine     :: TemplateParser Configuration
-configCommand  :: TemplateParser Configuration
-configDataFile :: TemplateParser Configuration
-configModels   :: TemplateParser Configuration
-configTexfile  :: TemplateParser Configuration
+configLine     :: TemplateParser VandelayTemplate
+configCommand  :: TemplateParser VandelayTemplate
+configDataFile :: TemplateParser VandelayTemplate
+configModels   :: TemplateParser VandelayTemplate
+configTexfile  :: TemplateParser VandelayTemplate
 
 configSection = do
-  _  <- string "configuration:" <* eol 
-  cs <- manyTillSectionHeader configLine 
-  return $ blankVandelayTemplate{configuration = mconcat cs}
+  _   <- string "configuration:" <* eol 
+  vts <- manyTillSectionHeader configLine 
+  return $ mconcat vts 
 
 configLine = 
-      try ( blankline >> return blankConfiguration)
+      try ( blankline >> return blankVandelayTemplate)
   <|> space1 *> configCommand 
 
 configCommand = 
@@ -94,14 +92,14 @@ configCommand =
   
 
 configDataFile = do 
-  filePath <- (string "data" *> manyTillEol)
-  est      <- lift . readEstimatesEIO $ filePath
-  return blankConfiguration{estimates = Last . Just $ est }
+  filePath <- string "data:" *> manyTillEol
+  est      <- mapM (lift . readEstimatesEIO) . stripSplitCommas $ filePath
+  return blankVandelayTemplate{estimates = est }
 
 
 -- error "configDataFile not defined" -- basicCommand "data:" (\p -> blankConfiguration{datafile = Last . Just $ p})
-configModels   = basicCommand "models:" (\p -> blankConfiguration{desiredModels = Last . Just . stripSplitCommas$ p})
-configTexfile  = basicCommand "tex:" (\p -> blankConfiguration{texfile = Last . Just $ p})
+configModels   = basicCommand "models:" (\p -> blankVandelayTemplate{desiredModels = Last . Just . stripSplitCommas$ p})
+configTexfile  = basicCommand "tex:" (\p -> blankVandelayTemplate{texfile = Last . Just $ p})
  
 
 
@@ -138,7 +136,7 @@ dataCommand  :: TemplateParser (Ordinal OutputRequest)
 dataRow = do
   d <- dataCommands <* eol
   let or = mconcat $ defaultOutputRequest : sortExtractOrdinal d -- Sort these to ensure the StatLine comes first
-  _ <- updateState (\_ -> or)
+  _ <- updateState (const or)
   return . Just $ Data or 
 
 dataCommands = sepBy (spaces >> dataCommand) (char ';')
@@ -146,14 +144,14 @@ dataCommands = sepBy (spaces >> dataCommand) (char ';')
 
 dataCommand = 
    getState >>= \lastOr -> 
-      scale    <$> ( (try (string "scale:")    *> many (noneOf ";\n")))
-  <|> surround <$> ( (try (string "surround:") *> many (noneOf ";\n")))
+      scale    <$>  (try (string "scale:")    *> many (noneOf ";\n"))
+  <|> surround <$>  (try (string "surround:") *> many (noneOf ";\n"))
   <|> statLine 
-        lastOr <$> ( (     string "stat:")     *> spaces *> int ) 
-  <|> index    <$> ( (     string "index:")    *> spaces *> int ) 
-  <|> name     <$> ( (try (string "name:")     *> many (noneOf ";\n")))
-  <|> code     <$> ( (try (string "code:")     *> many (noneOf ";\n")))
-  <|> format   <$> ( (try (string "format:")   *> many (noneOf ";\n")))
+        lastOr <$>  (     string "stat:"      *> spaces *> int ) 
+  <|> index    <$>  (     string "index:"     *> spaces *> int ) 
+  <|> name     <$>  (try (string "name:")     *> many (noneOf ";\n"))
+  <|> code     <$>  (try (string "code:")     *> many (noneOf ";\n"))
+  <|> format   <$>  (try (string "format:")   *> many (noneOf ";\n"))
     where
   scale t    = undefined
   statLine 
@@ -199,7 +197,7 @@ subCommands = do
 
 subDeclaration = 
   space1 *> many (noneOf ":\n\r") 
-    <*  ( (char ':') <?> "Colon needed to declare text source for substitutions.")
+    <*  ( char ':' <?> "Colon needed to declare text source for substitutions.")
 
 
 
@@ -215,8 +213,7 @@ basicCommand :: String
                 -> (String -> a) 
                 -> TemplateParser a
 basicCommand codestr fcn = 
-  (string codestr) *> manyTillEol
-  >>= return . fcn . stripStr
+  (fcn . stripStr) <$> (string codestr *> manyTillEol)
 
 
 space1    = space >> spaces
@@ -240,11 +237,10 @@ manyTillSectionHeader x = manyTill x (lookAhead sectionHeadOrEof)
 sourcePos :: TemplateParser SourcePos
 sourcePos = statePos `liftM` getParserState
 
-parseInt :: TemplateParser SourcePos 
-parseInt = do
-  numStr <- many1 digit
-  pos    <- sourcePos
-  return $ (pos) -- , (read numStr))
+-- parseInt :: TemplateParser SourcePos 
+-- parseInt = do
+--   numStr <- many1 digit
+--   sourcePos
 
 -- Text utility functions
 stripStr :: String -> String

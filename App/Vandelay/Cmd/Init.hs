@@ -71,34 +71,34 @@ writeConf = do
   let   texFile  = replaceExtension baseFile ".tex"
         baseFile = takeFileName dfp
 
-  tellLn $ "configuration:"
+  tellLn   "configuration:"
   tellLn $ "  data:   " ++ dfp 
-  tellLn $ "  models: # List models separated by columns"
+  tellLn   "  models: # List models separated by columns"
   tellLn $ "  tex:    " ++ texFile
 
-  tellLn $ "" 
-  tellLn $ "  # Models are:" 
+  tellLn "" 
+  tellLn "  # Models are:" 
   writeModels
-  tellLn $ "" 
+  tellLn "" 
   
 
 writeTable :: InitMonad ()
 writeTable = do
-  tellLn $ "table:"
-  tellLn $ "  template: header.tex # Subject to substitutions"
-  tellLn $ "  name: Print Name; code: coded_name; index: 0; surround: (,); format: %03.2f # Variable output. Only code is required"
-  tellLn $ "  latex: \\addlinespace # Source latex code - do not add end lines "
+  tellLn "table:"
+  tellLn "  template: header.tex # Subject to substitutions"
+  tellLn "  name: Print Name; code: coded_name; index: 0; surround: (,); format: %03.2f # Variable output. Only code is required"
+  tellLn "  latex: \\addlinespace # Source latex code - do not add end lines "
 
-  tellLn $ "" 
-  tellLn $ "  # Variables are:" 
+  tellLn "" 
+  tellLn "  # Variables are:" 
   writeVars
-  tellLn $ "" 
+  tellLn "" 
 
 writeSub :: InitMonad ()
 writeSub = do 
-  tellLn $ "substitutions:"
-  tellLn $ "  CAPTION: Insert caption text which may"
-  tellLn $ "           extends onto another line."
+  tellLn "substitutions:"
+  tellLn "  CAPTION: Insert caption text which may"
+  tellLn "           extends onto another line."
 
 
 
@@ -108,11 +108,8 @@ writeVars = do
   contents <- askContents 
   nosort   <- askNoSortVars
 
-  let sorter = case nosort of
-                False -> id
-                True  -> sort
-
-  let vs = sorter . stripFilter . map (head . T.splitOn tab) . T.lines . pack $ contents
+  let sorter = if nosort then sort else id
+      vs     = sorter . stripFilter . map (head . T.splitOn tab) . T.lines . pack $ contents
   mapM_ (tellLn . tabAndComment) vs
 
 writeModels :: InitMonad ()
@@ -120,11 +117,8 @@ writeModels = do
   contents <- askContents 
   nosort   <- askNoSortModels
 
-  let sorter = case nosort of
-                False -> id
-                True  -> sort
-
-  let ms = sorter . stripFilter . T.splitOn tab . head . T.lines . pack $ contents 
+  let sorter = if nosort then sort else id
+      ms    = sorter . stripFilter . T.splitOn tab . head . T.lines . pack $ contents 
   mapM_ (tellLn . tabAndComment) ms
 
 

@@ -2,6 +2,7 @@ module App.Vandelay.Estimates.Output
   ( outputRow
   ) where  
 
+import Control.Applicative
 import Data.List
 import Data.Maybe
 import Data.Monoid
@@ -10,60 +11,79 @@ import App.Vandelay.Text
 import App.Vandelay.Types
 import App.Vandelay.Estimates.Types
 
+type ModelName = String
+type CoeffName = String
 
 
-outputRow :: OutputRequest -- Output request
-          -> Estimates
-          -> [String]     --  [Models]
+
+outputRow :: OutputRequest 
+          -> [Estimates]
+          -> [ModelName]    
           -> Either String String 
 outputRow  or est ms = do
-  midx   <- getModelIndices ms est
-  coefs  <- getCoefficientCells (getOCoeffs or) est
-  result <- mapM (combineCoeffCellItems coefs (getOItemIdx or)) midx
-
+  
+  result <- mapM (concatDataItems or est) ms 
   let (prefix, postfix) = getOSurround or
 
   Right $ joinAmps ( getOName or : -- Name     
-                   (map (\s -> prefix ++ s ++ postfix) . map (texify (getOFormat or)) $ result)) --------Formatted   Values   -------
+                     map ((\s -> prefix ++ s ++ postfix) . texify (getOFormat or)) result
+                   ) 
           ++ "\\\\"
 
-combineCoeffCellItems :: [[Cell]]
-                      -> Int
-                      -> Int
-                      -> Either String DataItem
-combineCoeffCellItems  cells itemidx modelidx = 
-  return . mconcat =<< mapM (safeCellLookup itemidx) cellsForModels -- either string [dataitem]
+
+
+concatDataItems :: OutputRequest
+                 -> [Estimates]
+                 -> ModelName
+                 -> Either String DataItem 
+concatDataItems  o es mn = 
+  mconcat <$> (mapM (lookupDataItem o es mn) . getOCoeffs $ o)
+
+
+lookupDataItem :: OutputRequest 
+               -> [Estimates]
+               -> ModelName
+               -> CoeffName
+               -> Either String DataItem
+lookupDataItem o e m c =
+  (!!) <$> lookupCell e m c <*> return (getOItemIdx o) 
+
+
+
+lookupCell :: [Estimates]
+           -> ModelName
+           -> CoeffName 
+           -> Either String Cell
+lookupCell e m c = do
+  est  <- findEstimatesWithModel m e
+  (!!) <$> findCoefficient c est <*> findColumnIndex m est
+
+
+findEstimatesWithModel :: ModelName -> [Estimates] -> Either String Estimates
+findEstimatesWithModel m es | null validEst       = Left $ unwords ["Model", m, "not found in data files", unwordEnglishList (map sourceFile es) ]
+                            | length validEst > 1 = Left $ unwords ["Multiple specifications of modelname found in data files.\nFound in ", unwordEnglishList (map sourceFile validEst)]
+                            | otherwise           = Right $ head validEst
+  where validEst = filter (elem m . models) es
+
+
+findColumnIndex :: ModelName -> Estimates -> Either String Int
+findColumnIndex m e = 
+  case col of
+    Nothing -> Left $ unwords ["Model", m, "not found in", sourceFile e ]
+    Just i  -> Right i
     where 
-  cellsForModels = map (!! modelidx) $ cells
+  col = (== m) `findIndex` models e
 
 
-safeCellLookup :: Int -> Cell -> Either String DataItem
-safeCellLookup i c | i >= length c = Left $ "Cell item at index " ++ show i ++ " does not exist."
-                   | otherwise     = Right $ c !! i
+findCoefficient :: CoeffName -> Estimates -> Either String [Cell]
+findCoefficient cn = findCoefficient' cn . coefficients
 
 
-getModelIndices :: [String] -> Estimates -> Either String [Int]
-getModelIndices mnames est 
-  | missingmodels /= [] = Left  $ missingmodelerror 
-  | otherwise           = Right $ indices 
-    where
-  missingmodelerror = unlines [ unwords ["Model(s):", unwordEnglishList missingmodels, "not found in estimation results file."]
-                              , unwords ["Available models are:", unwordEnglishList (models est)]
-                              ]
-  missingmodels = catMaybes . map ( \x -> if x `elem` (models est) then Nothing else Just x ) $ mnames
-  indices       = catMaybes . map ( \x -> (==) x `findIndex` (models est) ) $ mnames
+findCoefficient' :: CoeffName -> [Coeff] -> Either String [Cell]
+findCoefficient' s []     = Left $ "Coefficient " ++ s ++ " not found."
+findCoefficient' s (c:cs) | cName c ==s = Right $ cCells c
+                          | otherwise   = findCoefficient' s cs
 
 
-getCoefficientCells :: [String] -> Estimates -> Either String [[Cell]]
-getCoefficientCells cnames est | missingcoefs /= [] = Left  $ "Coefficient(s): " ++ unwordEnglishList missingcoefs ++ " not found in estimation results file." 
-                               | otherwise          = Right $ cells
-    where
-  missingcoefs  = catMaybes . map ( \x -> case x `lookup` (coefficients est) of 
-                                             Nothing -> Just x
-                                             _       -> Nothing ) $ cnames
-  cells         = catMaybes . map ( `lookup` (coefficients est) ) $ cnames
-
-
- 
 
 

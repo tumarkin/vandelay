@@ -1,12 +1,13 @@
 module App.Vandelay.Estimates.Types
   ( Estimates(..)
-  , Coeff
+  , Coeff(..)
   , Cell
   , DataItem(..)
 
   , OutputRequest(..)
   , defaultOutputRequest
   , blankOutputRequest
+
 
   , getOName
   , getOCoeffs
@@ -25,25 +26,35 @@ module App.Vandelay.Estimates.Types
 import App.Vandelay.Text 
 import App.Vandelay.Types
 
+-- import Control.Monad.Trans.Reader
+import Control.Monad.RWS
+import Data.List
+import Control.Applicative
+
 
 data Estimates  = 
-  Estimates { models       :: [String]
-            , coefficients :: [Coeff] -- [(String, Coeff)]
+  Estimates { sourceFile   :: String
+            , models       :: [String]
+            , coefficients :: [Coeff] 
             }
             deriving Show
 
-type Coeff        = (CoefName, [Cell])
+data Coeff        = Coeff { cName  :: String
+                          , cCells :: [Cell]
+                          } deriving (Show, Eq)
+
 type Cell         = [DataItem]
 data DataItem     = StrData String
                   | ValData  Double Significance 
                   | BlankData
                   deriving (Show, Eq)
 type Significance = Int
-type CoefName = String
+type CoefName     = String
 
 
 
 
+-- Data Item 
 
 instance Monoid DataItem where 
   mempty  = BlankData

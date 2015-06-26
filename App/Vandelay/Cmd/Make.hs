@@ -2,6 +2,7 @@ module App.Vandelay.Cmd.Make
   ( makeTable
   ) where
 
+import Control.Applicative
 import Control.Monad
 import Control.Monad.Trans.Class
 import Control.Monad.Trans.RWS
@@ -39,7 +40,7 @@ askDesiredModels = lift . hoistEither . safeGetDesiredModels =<< ask
 askSubstitutions :: MakeMonad [(Text, Text)] 
 askSubstitutions =  asks substitutions
 
-askEstimates :: MakeMonad Estimates
+askEstimates :: MakeMonad [Estimates]
 askEstimates =  lift . hoistEither . safeGetEstimates =<< ask
 
 -- Table output creation functions 
@@ -49,10 +50,10 @@ createOutput =  mapM_ doTableCommand =<< askTable
 doTableCommand :: TableCommand -> MakeMonad () 
 doTableCommand (Latex l)    = tellLn $ l ++ "\\\\" 
 doTableCommand (Template t) = tellLn =<< return doSubstitution `ap` (lift . safeReadFile $ t) `ap` askSubstitutions
--- doTableCommand (Data   or)  = tellLn =<< lift =<< return (outputRowEIO) `ap` return or `ap` askEstimates `ap` askDesiredModels
-doTableCommand (Data   or)  = tellLn =<< lift . hoistEither =<< return (outputRow) `ap` return or `ap` askEstimates `ap` askDesiredModels
+doTableCommand (Data   or)  = tellLn =<< lift . hoistEither =<< return outputRow `ap` return or `ap` askEstimates `ap` askDesiredModels
                                                                 -- Gives a Monad (Either String String) 
                                       --  MakeMonadEither <- Either T <- Either String String 
+
 
 tellLn s = tell $ s ++ "\n"
 

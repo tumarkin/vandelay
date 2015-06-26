@@ -1,10 +1,9 @@
 module App.Vandelay.Template
-  ( module App.Vandelay.Template.Types
-  , module App.Vandelay.Template.ParserT
+  ( module X
   ) where
 
-import App.Vandelay.Template.Types
-import App.Vandelay.Template.ParserT
+import App.Vandelay.Template.Types   as X
+import App.Vandelay.Template.ParserT as X
 
 
 

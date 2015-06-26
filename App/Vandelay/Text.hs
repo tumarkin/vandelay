@@ -31,19 +31,22 @@ import Data.Text (Text, pack, unpack)
 
 
 
-hasChar :: String -> Bool
-hasChar = or . map isAlpha
-
+hasChar  :: String -> Bool
 hasDigit :: String -> Bool
-hasDigit = or . map isDigit
+
+hasChar  = any isAlpha
+hasDigit = any isDigit
+
+
+
 
 splitTab :: String -> [String] 
 splitTab s = map unpack $ T.splitOn (pack "\t") (pack s)
 
 unwordEnglishList :: [String] -> String
-unwordEnglishList (s1:[])    = s1
-unwordEnglishList (s1:s2:[]) = s1 ++ " and " ++ s2
-unwordEnglishList ss         = intercalate ", " (init ss) ++ ", and " ++ last ss
+unwordEnglishList [s1]    = s1
+unwordEnglishList [s1,s2] = s1 ++ " and " ++ s2
+unwordEnglishList ss      = intercalate ", " (init ss) ++ ", and " ++ last ss
 
 
 commaPrintf :: String -- Format
@@ -64,7 +67,7 @@ joinAmps = intercalate " & "
 
 stripSplitCommas :: String -> [String]
 stripSplitCommas s = 
-  map (unpack . T.strip). T.splitOn (pack ",") $ (pack s)
+  map (unpack . T.strip). T.splitOn (pack ",") $ pack s
 
 
 doSubstitution :: String  -- Input String
