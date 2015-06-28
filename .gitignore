@@ -12,4 +12,4 @@
  *.prof
  *.aux
  *.hp
- doc
+ doc/*
