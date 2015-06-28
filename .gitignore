@@ -12,5 +12,6 @@
  *.prof
  *.aux
  *.hp
+ *.swp
  doc/*
  vandelay
