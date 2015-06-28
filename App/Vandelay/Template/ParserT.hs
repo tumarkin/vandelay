@@ -13,10 +13,8 @@ import Text.Parsec hiding (many, optional, (<|>))
 import qualified Data.Text as T
 
 import App.Vandelay.Estimates
-import App.Vandelay.IO
 import App.Vandelay.Template.Types
-import App.Vandelay.Text
-import App.Vandelay.Types
+import App.Vandelay.Core
 
 --- Debugging related
 import Debug.Trace
@@ -27,7 +25,7 @@ traceControl = False
 readTemplateEIO :: String  -- File name
                  -> EIO String VandelayTemplate
 readTemplateEIO f = do
-  txt <- safeReadFileWithError f "Template file"
+  txt <- safeReadFileWithError f "Template file" >>= removeCommentsEIO
   t   <- runParserT tablefile defaultOutputRequest ("Template file: " ++ f) txt 
 
   case t of 

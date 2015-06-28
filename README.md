@@ -7,11 +7,15 @@ A LaTeX table importer/exporter
 
 
 
-**Features**
+**Benefits**
 
-* Easily create multiple tables from a single file containing the results from estimating several specifications. 
+* Easily create multiple tables from files containing the results from estimating several specifications. 
 * Eliminate the need to re-run your estimation should you decide to reformat your tables.
 * Save time when revising your results with automated table generation. 
+
+**Features**
+
+* Join different files of estimation results as necessary.
 * Reorder rows and columns as needed.
 * Combine coefficients should your software package decide to give a coefficient different names in different specifications.
 * Scale and format coefficients on the fly.
@@ -39,11 +43,21 @@ A precompiled binary for Mac OS X Mavericks is currently the only one available.
 * Use the command `cabal install vandelay.cabal` from the project root directory.
 
 # To Do
-* Allow for comments in the template file
-* Allow for data commands to end with a semicolon
+
+**Priority**
+
 * Improve user messages when a template is misspecified
+* Standardize error messages
 * *vandelay make* subcommand support wildcard filenames
-* **DONE** - Add support for merging multiple estimation results files 
+* *vandelay init* supports multiple files with appropriate listing of variable names
+* **DONE** Support merging multiple estimation results files 
+* **DONE** Allow for comments in the template file
+* **DONE** Allow for missing data in variable lists (useful when multiple estimation results files are joined)
+* **DONE** Allow data commands to end with a semicolon
+
+**Low Priority**
+
+* Output to other formats (e.g. DOCX)
 
 # Contributing
 To do 

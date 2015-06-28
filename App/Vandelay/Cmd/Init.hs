@@ -5,8 +5,7 @@ module App.Vandelay.Cmd.Init
   , SortOptions(..)
   ) where
 
-import App.Vandelay.IO
-import App.Vandelay.Types (EIO)
+import App.Vandelay.Core
 import Control.Monad
 import Control.Monad.IO.Class
 import Control.Monad.Trans.Either
@@ -15,23 +14,16 @@ import Control.Monad.Trans.RWS
 -- import Control.Monad.Trans.Writer
 import Data.List
 import qualified Data.Text as T
-import Data.Text (Text, pack, unpack)
+-- import Data.Text (Text, pack, unpack)
 import System.FilePath
 
 
 
-data SortOptions =  
-    SortOptions { nosortmodels :: Bool
-                , nosortvars   :: Bool
-                }
-    deriving (Show)
-
-
 -- Initialize template
-initTemplate :: String       -- Estimation results file
-             -> Maybe String -- Output File
+initTemplate :: String       -- ^ Estimation results filepath
+             -> Maybe String -- ^ Optional output file (stdout if nothing)
              -> SortOptions 
-             -> EIO String () -- String, Handle)
+             -> EIO String () -- ^ Error message or ()
 initTemplate estPath textOutFile sos = do
   estFile <- safeReadFile estPath
   (_,_,text) <- runRWST (writeConf >> writeTable >> writeSub ) (estPath, estFile, sos) ()
@@ -39,32 +31,41 @@ initTemplate estPath textOutFile sos = do
   safeWriteFile textOutFile text 
 
 
+data SortOptions =  
+  SortOptions 
+    { -- | Output models in order of appearance in estimates file if true
+      nosortmodels :: Bool 
+      -- | Output variables in order of appearance in estimates file  if true
+    , nosortvars   :: Bool
+    }
+    deriving (Show)
 
--- Internal data types
 
+
+-- | Internal data types
 type InitMonad        = RWST Setup String () (EIO String)
 type Setup            = (DataFilePath, DataFileContents, SortOptions)
 type DataFilePath     = String
 type DataFileContents = String
 
 
-askPath :: InitMonad DataFilePath
-askPath = asks fst -- liftM fst ask
-  where fst (a,_,_) = a
-
-askContents :: InitMonad DataFileContents
-askContents = liftM snd ask
-  where snd (_,a,_) = a
-
-
+askPath          :: InitMonad DataFilePath
+askContents      :: InitMonad DataFileContents
 askNoSortOptions :: InitMonad SortOptions
-askNoSortOptions = liftM trd ask
-  where trd (_,_,a) = a
+askNoSortModels  :: InitMonad Bool
+askNoSortVars    :: InitMonad Bool
 
-askNoSortModels = liftM nosortmodels askNoSortOptions
-askNoSortVars   = liftM nosortvars   askNoSortOptions
+askPath          = asks fst'
+askContents      = asks snd'
+askNoSortOptions = asks trd'
+askNoSortModels  = liftM nosortmodels askNoSortOptions
+askNoSortVars    = liftM nosortvars   askNoSortOptions
 
--- Template initialization printing functions 
+fst' (a,_,_) = a
+snd' (_,a,_) = a
+trd' (_,_,a) = a
+
+-- | Write the template's configuration section
 writeConf :: InitMonad () 
 writeConf = do
   dfp <- askPath
@@ -82,6 +83,7 @@ writeConf = do
   tellLn "" 
   
 
+-- | Write the template's table section
 writeTable :: InitMonad ()
 writeTable = do
   tellLn "table:"
@@ -94,6 +96,7 @@ writeTable = do
   writeVars
   tellLn "" 
 
+-- | Write the template's substitution section
 writeSub :: InitMonad ()
 writeSub = do 
   tellLn "substitutions:"
@@ -102,7 +105,7 @@ writeSub = do
 
 
 
--- Write models and variables 
+-- | Write the variables 
 writeVars :: InitMonad ()
 writeVars = do 
   contents <- askContents 
@@ -110,8 +113,9 @@ writeVars = do
 
   let sorter = if nosort then sort else id
       vs     = sorter . stripFilter . map (head . T.splitOn tab) . T.lines . pack $ contents
-  mapM_ (tellLn . tabAndComment) vs
+  mapM_ (tellLn . indentAndComment) vs
 
+-- | Write the models 
 writeModels :: InitMonad ()
 writeModels = do
   contents <- askContents 
@@ -119,22 +123,21 @@ writeModels = do
 
   let sorter = if nosort then sort else id
       ms    = sorter . stripFilter . T.splitOn tab . head . T.lines . pack $ contents 
-  mapM_ (tellLn . tabAndComment) ms
+  mapM_ (tellLn . indentAndComment) ms
 
 
 
 
 
-
+-- | Text utility functions
 stripFilter:: [Text] -> [String] -- Remove spaces, drop blanks
 stripFilter = map unpack . filter (not . T.null) . map T.strip  
 
 tab :: Text
 tab = "\t"
 
-tabAndComment :: String -> String
-tabAndComment s = "  # " ++ s
-
+indentAndComment :: String -> String
+indentAndComment s = "  # " ++ s
 
 tellLn s = tell $ s ++ "\n"
 

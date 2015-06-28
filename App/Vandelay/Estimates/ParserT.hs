@@ -5,9 +5,7 @@ module App.Vandelay.Estimates.ParserT
 -- import Debug.Trace
 
 import App.Vandelay.Estimates.Types
-import App.Vandelay.IO
-import App.Vandelay.Types
-import App.Vandelay.Text
+import App.Vandelay.Core
 
 import Control.Applicative
 import Control.Monad.Trans.Either
@@ -22,7 +20,7 @@ type EstParser = ParsecT String () (EIO String)
 readEstimatesEIO :: String  -- File name
                  -> EitherT String IO Estimates
 readEstimatesEIO f = do
-  txt <- safeReadFileWithError f "Estimates file"
+  txt <- safeReadFileWithError f "Estimates file" 
   r   <- runParserT (estimates f) () ("Estimates file: " ++ f) txt 
   case r of 
     Left  parseErr -> left $ show parseErr
@@ -36,8 +34,13 @@ estimates fileName = do
   models <- header 
   let numCols = length models 
   rows   <- many (rowOfLength numCols <* eol)
+  let eData = formCoeffs models rows
 
-  return $ Estimates fileName models (formCoeffs rows)
+  return Estimates{ sourceFile   = fileName
+                  , models       = models
+                  , coefficients = nub . map (snd . fst) $ eData
+                  , eData        = eData
+                  } 
 
 
 
@@ -105,26 +108,27 @@ sepByN n p sep = (:) <$> (p <* sep) <*> sepByN (n-1) p sep
 
 
 
-
 -- Make coefficients from the individual rows
-formCoeffs :: [ (CoefCmd,[DataItem]) ] -> [Coeff]
-formCoeffs cs = formCoeffs' cs (Nothing ,[]) 
+formCoeffs :: [ModelName] -> [ (CoefCmd,[DataItem]) ] -> [EData]
+formCoeffs ms cs = formCoeffs' ms cs (Nothing ,[]) 
 
-formCoeffs' :: [(CoefCmd,[DataItem])] -- Command Queue
-            -> ( Maybe Coeff, [Coeff] ) -- Active, [Processed]
-            -> [Coeff]
-formCoeffs' []                     (Just cur, coefs) = reverse (cur:coefs)
-formCoeffs' (cc@(NewCoef _,_):ccs) (Nothing,[])      = formCoeffs' ccs (Just (makeNewCoef cc), [])
-formCoeffs' (cc@(AddData  ,_):ccs) (Nothing,[])      = formCoeffs' ccs (Nothing,[])
-formCoeffs' (cc@(NewCoef _,_):ccs) (Just cur,coefs)  = formCoeffs' ccs (Just (makeNewCoef cc), cur:coefs)
-formCoeffs' (    (AddData, d):ccs) (Just cur,coefs)  = formCoeffs' ccs (Just (combineData cur d), coefs) 
+formCoeffs' :: [ModelName] 
+            -> [(CoefCmd,[DataItem])]   -- Command Queue
+            -> ( Maybe [EData], [EData] ) -- Active, [Processed]
+            -> [EData]
+formCoeffs' ms []                     (Just cur, eds)  = reverse (cur ++ eds)
+formCoeffs' ms (cc@(NewCoef _,_):ccs) (Nothing,[])     = formCoeffs' ms ccs (Just (makeNewCoef ms cc), [])
+formCoeffs' ms (cc@(AddData  ,_):ccs) (Nothing,[])     = formCoeffs' ms ccs (Nothing,[])
+formCoeffs' ms (cc@(NewCoef _,_):ccs) (Just cur,coefs) = formCoeffs' ms ccs (Just (makeNewCoef ms cc), cur ++ coefs)
+formCoeffs' ms (    (AddData, d):ccs) (Just cur,coefs) = formCoeffs' ms ccs (Just (combineData cur d), coefs) 
 
 
-makeNewCoef :: (CoefCmd, [DataItem]) -> Coeff
-makeNewCoef (NewCoef n, is) = Coeff n (listToListOfLists is)
+makeNewCoef :: [ModelName] -> (CoefCmd, [DataItem]) -> [EData]
+makeNewCoef ms (NewCoef n, is) = zip modelXCoeff (listToListOfLists is)
+  where modelXCoeff = zip ms (repeat n)
 
-combineData :: Coeff -> [DataItem] -> Coeff
-combineData c ds = c{cCells = zipWith (++) (cCells c) (listToListOfLists ds)}
+combineData :: [EData] -> [DataItem] -> [EData]
+combineData = zipWith (\e d -> (fst e, snd e ++ [d]))
 
 
 listToListOfLists = map (:[]) 
@@ -144,5 +148,5 @@ validateEstimates est | null dupmodels = Right est
 -- Estimate formation command
 data CoefCmd = NewCoef String
              | AddData
-         deriving Show
+             deriving Show
 

@@ -16,8 +16,7 @@ module App.Vandelay.Template.Types
 -- import App.Vandelay.Estimates
 import App.Vandelay.Estimates.Types
 import App.Vandelay.Estimates.ParserT
-import App.Vandelay.Text
-import App.Vandelay.Types
+import App.Vandelay.Core
 
 
 -- Vandalay Template 

@@ -1,8 +1,12 @@
 module App.Vandelay.Estimates.Types
   ( Estimates(..)
-  , Coeff(..)
+  -- , Coeff(..)
   , Cell
   , DataItem(..)
+
+  , ModelName
+  , CoefName
+  , EData
 
   , OutputRequest(..)
   , defaultOutputRequest
@@ -21,10 +25,11 @@ module App.Vandelay.Estimates.Types
   , setFormat
   , setSurround
 
+  , texify
+
   ) where  
 
-import App.Vandelay.Text 
-import App.Vandelay.Types
+import App.Vandelay.Core 
 
 -- import Control.Monad.Trans.Reader
 import Control.Monad.RWS
@@ -34,14 +39,17 @@ import Control.Applicative
 
 data Estimates  = 
   Estimates { sourceFile   :: String
-            , models       :: [String]
-            , coefficients :: [Coeff] 
+            , models       :: [ModelName]
+            , coefficients :: [CoefName]
+            , eData        :: [ ((ModelName, CoefName), Cell) ] 
             }
             deriving Show
 
-data Coeff        = Coeff { cName  :: String
-                          , cCells :: [Cell]
-                          } deriving (Show, Eq)
+type EData = ((ModelName, CoefName), Cell)
+
+-- data Coeff        = Coeff { cName  :: String
+--                           , cCells :: [Cell]
+--                           } deriving (Show, Eq)
 
 type Cell         = [DataItem]
 data DataItem     = StrData String
@@ -49,6 +57,8 @@ data DataItem     = StrData String
                   | BlankData
                   deriving (Show, Eq)
 type Significance = Int
+
+type ModelName    = String
 type CoefName     = String
 
 
@@ -62,10 +72,11 @@ instance Monoid DataItem where
   mappend BlankData b = b
   mappend a         b = a
 
-instance Latexable DataItem where
-  texify _   (StrData s) = "{" ++ s ++ "}"
-  texify _   (BlankData)    = "" 
-  texify fmt (ValData v s)  = commaPrintf fmt v ++ makeStars s
+-- instance Latexable DataItem where
+texify :: String -> DataItem -> String
+texify _   (StrData s) = "{" ++ s ++ "}"
+texify _   (BlankData)    = "" 
+texify fmt (ValData v s)  = commaPrintf fmt v ++ makeStars s
 
 makeStars :: Int -> String
 makeStars i | i == 0    = ""

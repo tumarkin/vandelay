@@ -2,10 +2,8 @@
 
 import App.Vandelay.Cmd
 import App.Vandelay.Estimates
-import App.Vandelay.IO
 import App.Vandelay.Template 
-import App.Vandelay.Text (stripSplitCommas)
-import App.Vandelay.Types
+import App.Vandelay.Core 
 import Control.Monad
 import Control.Monad.IO.Class
 import Control.Monad.Trans.Either
