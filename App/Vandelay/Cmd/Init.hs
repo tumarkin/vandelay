@@ -27,19 +27,16 @@ liftEIOString = return
 
 
 -- Initialize template
-initTemplate :: [String]       -- ^ Estimation results filepath
-             -> Maybe String -- ^ Optional output file (stdout if nothing)
+initTemplate :: [String]             -- ^ Estimation results filepaths
+             -> Maybe String         -- ^ Optional output file (stdout if nothing)
              -> SortOptions 
              -> SourceFileReferences -- ^ Use abbreviated model names
-             -> EIO String () -- ^ Error message or ()
+             -> EIO String ()        -- ^ Error message or ()
 initTemplate estPaths textOutFile sos ab = do
   estFile    <- mapM safeReadFile estPaths
   (_,_,text) <- runRWST (writeConf >> writeTable >> writeSub ) (InitSetup estPaths estFile sos ab) ()
   
   safeWriteFile textOutFile text 
-
-
-
 
 
 -- -- | Internal data types
@@ -52,6 +49,7 @@ data InitSetup   = InitSetup
   }
 
 type FileContent = String
+type FileRefs    = String
 
 data SortOptions = SortOptions 
     { -- | Output models in order of appearance in estimates file if false
@@ -115,9 +113,10 @@ writeDataFiles = do
   refs  <- askFileReferences
   sfr   <- asks sourceFileReferences
 
-  if sfr /= Abbreviation then tellLn . indent . dataStatement . intercalate  ", " =<< askPath 
-                         else let out   = map (indent . dataStatement *** refStatement) $ zip paths refs 
-                              in  mapM_ tellLnWithDataSource =<< lengthenItemRefTuple out
+  if sfr /= Abbreviation 
+  then tellLn . indent . dataStatement . intercalate  ", " =<< askPath 
+  else let out   = map (indent . dataStatement *** refStatement) $ zip paths refs 
+       in  mapM_ tellLnWithDataSource =<< lengthenItemRefTuple out
 
 
 
@@ -133,17 +132,13 @@ writeItem :: InitMonad Bool                            -- | Sorting asker
           -> (String -> String -> [(String, [String])])-- | Item-reference tupling function 
           -> InitMonad ()
 writeItem askSort tupler = do
-  contents <- askContents 
-  refs     <- askFileReferences
+  conrefs  <- askContentsRefs -- [(Content, Source File Reference)]
   sortQ    <- askSort
 
-  let sorter    = if sortQ then id else sort
-      vts       = concat . zipWith tupler
-                  refs $ contents 
-      vs        = sorter . M.toList . M.fromListWith (++) $ reverse vts  --- [(Variable String, [Data Source])]
-      maxVarLen = maximum . map (length . fst) $ vs
-
-      out   =  map ( indentAndComment *** dataSourceStatement ) vs 
+  let sorter = if sortQ then id else sort
+      its    = concatMap (uncurry tupler) conrefs                     -- [(Item, Source File Reference)]
+      is     = sorter . M.toList . M.fromListWith (++) $ reverse its  -- [(Item, [Source File Reference])] -- Group by item
+      out    = map ( indentAndComment *** dataSourceStatement ) is    -- Format each part of tuple using arrows
   mapM_ tellLnWithDataSource =<< lengthenItemRefTuple out
 
 
@@ -164,41 +159,24 @@ varsFromContent =
 
 
 itemReferenceTuple :: (String -> [String]) -- | Item Extraction function
-                   -> String -- | Ref
                    -> String -- | Content
+                   -> String -- | Refs
                    -> [(String, [String])] -- | [(Item, [Ref])]
-itemReferenceTuple f r c = zip (f c) $ repeat [r]
+itemReferenceTuple f c r = zip (f c) $ repeat [r]
 
 
 varReferenceTuple   = itemReferenceTuple varsFromContent
 modelReferenceTuple = itemReferenceTuple modelsFromContent
 
--- varReferenceTuple :: String -- | Ref
---                    -> String -- | Content
---                    -> [(String, [String])] -- | [(Variable, [Ref])]
--- varReferenceTuple r c = zip (varsFromContent c) $ repeat [r]
-
-
--- modelReferenceTuple :: String
---                     -> String               -- | Content
---                    -> [(String, [String])] -- | [(Variable, [Ref])]
--- modelReferenceTuple r c = zip (modelsFromContent c) $ repeat [r]
-
-
-
-
-
-
-
 -- | Reader ask utility functions
 
 askPath           :: InitMonad [FilePath]
 askContents       :: InitMonad [FileContent]
-askContentsRefs   :: InitMonad [(FileContent, String)]
+askContentsRefs   :: InitMonad [(FileContent, FileRefs)]
 askSortOptions    :: InitMonad SortOptions
 askSortModels     :: InitMonad Bool
 askSortVars       :: InitMonad Bool
-askFileReferences :: InitMonad [String]
+askFileReferences :: InitMonad [FileRefs]
 
 askPath           = asks dataFilePaths 
 askContents       = asks dataFileContents
@@ -220,13 +198,26 @@ askFileReferences = do
 
 
 
--- | Text utility functions
+-- | WriterT utility functions
 tellLn s = tell $ s ++ "\n"
 tellLnWithDataSource (s,ds) = do
   b <- asks sourceFileReferences
   if b /= NoSFR then tellLn (s ++ ds) else tellLn s
 
-stripFilter:: [Text] -> [String] -- Remove spaces, drop blanks
+
+-- | Statement creation
+dataStatement :: String -> String
+dataStatement = (++) "data: "
+
+dataSourceStatement :: [String] -> String
+dataSourceStatement rs = unwords [" # In", unwordEnglishList rs]
+
+refStatement :: String -> String
+refStatement s = unwords [" #", s]
+
+
+-- | Text utility functions
+stripFilter:: [Text] -> [String] -- | Remove spaces, drop blanks
 stripFilter = map unpack . filter (not . T.null) . map T.strip  
 
 tab = "\t"
@@ -250,13 +241,3 @@ lengthenItemRefTuple ts = do
   if sfr /= NoSFR then let maxlength = maximum . map (length . fst) $ ts
                        in  return $ map (first (extendString maxlength)) ts
                        else return ts
-
--- | Statement creation
-dataStatement :: String -> String
-dataStatement = (++) "data: "
-
-dataSourceStatement :: [String] -> String
-dataSourceStatement rs = unwords [" # In", unwordEnglishList rs]
-
-refStatement :: String -> String
-refStatement s = unwords [" #", s]
