@@ -1,17 +1,27 @@
-module App.Vandelay.Cmd.Make                                      
-  ( makeTable
+{-# LANGUAGE OverloadedStrings #-}
+
+module App.Vandelay.Cmd.Make
+  ( makeTables
+  , makeTable
   ) where
 
 import Control.Applicative
 import Control.Monad
 import Control.Monad.Trans.Class
 import Control.Monad.Trans.RWS
+import Rainbow
 
 import App.Vandelay.Core 
 import App.Vandelay.Estimates
 import App.Vandelay.Template
 
 
+
+makeTables :: [String]      -- ^ Vandelay template filepath globs
+           -> EIO String () -- ^ Error message or () 
+makeTables gs = do
+  globs <- globPaths gs
+  mapM_ makeTable globs
 
 -- | Create a LaTeX table from a Vandelay template
 makeTable :: String        -- ^ Vandelay template filepath
@@ -21,7 +31,9 @@ makeTable templatePath = do
   outFile   <- hoistEither . safeGetTexfile $ template
   (_,_,res) <- runMakeMonad createOutput template
 
-  safeWriteFile (Just outFile) res
+  liftIO . putChunk $ ( "Success: " <> fore green <> bold) 
+  liftIO . putStrLn $ templatePath
+  unsafeWriteFile (Just outFile) res
 
 
 --- Internal data types 

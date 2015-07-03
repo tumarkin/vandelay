@@ -4,6 +4,9 @@ module App.Vandelay.Core.IO
   ( safeReadFile
   , safeReadFileWithError
   , safeWriteFile
+
+  , unsafeWriteFile
+
   , globPaths
   ) where
 
@@ -15,6 +18,14 @@ import System.FilePath.Glob
 import System.Directory
 import System.IO
 
+
+
+unsafeWriteFile :: Maybe String -- Optional output filename 
+                -> String       -- The text to output
+                -> EIO String ()
+unsafeWriteFile fo t = do
+  h <- unsafeGetHandle fo
+  liftIO $ hPutStrLn h t >> safeCloseHandle h
 
 
 safeReadFileWithError :: String -> String -> EIO String String
@@ -34,29 +45,24 @@ safeWriteFile fo t = do
   h <- safeGetHandle fo
   liftIO $ hPutStrLn h t >> safeCloseHandle h
 
-
-
-
-
-
-
 safeGetHandle :: Maybe String -> EIO String Handle
 safeGetHandle Nothing = return stdout 
 safeGetHandle (Just t)= 
   (liftIO . doesFileExist $ t)
-  >>= bool (unsafeGetHandle t)  -- Does not exist
-           (overwriteHandle t)  -- Exists
+  >>= bool (unsafeGetHandle (Just t))  -- Does not exist
+           (overwriteHandle t)         -- Exists
 
 overwriteHandle :: String -> EIO String Handle
 overwriteHandle t = do
   liftIO . putStrLn $ unwords ["File",t,"exists. Overwrite (y/n)?"]
   ans <- liftIO getLine
-  if ans == "y" then unsafeGetHandle t
+  if ans == "y" then unsafeGetHandle $ Just t
                 else left "Execution halted."
 
 
-unsafeGetHandle  :: String -> EIO String Handle
-unsafeGetHandle t = liftIO $ openFile t WriteMode 
+unsafeGetHandle  :: Maybe String -> EIO String Handle
+unsafeGetHande  Nothing  = return stdout
+unsafeGetHandle (Just t) = liftIO $ openFile t WriteMode 
 
 
 
@@ -73,5 +79,22 @@ safeCloseHandle h | h == stdout = return ()
 --     >> hClose h
 
 
-globPaths :: [String] -> IO [FilePath]
-globPaths = liftM (nub . concat) . sequence . map glob
+-- globPaths :: [String] -> IO [FilePath]
+-- globPaths = liftM (nub . concat) . sequence . map glob
+
+
+
+globPaths :: [String] -> EIO String [FilePath]
+globPaths = liftM (nub . concat) . sequence . map safeGlob
+
+
+safeGlob :: String  -> EIO String [FilePath]
+safeGlob s = do
+  gs <- liftIO . glob $ s
+  case gs of 
+    [] -> left $ unwords ["No files found matching pattern",s]
+    gs -> right gs
+
+
+
+

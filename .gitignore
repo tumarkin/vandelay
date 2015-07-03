@@ -15,5 +15,7 @@
  *.swp
  doc/**
  vandelay
- **/*.o
- **/*.hi
+ App/**/*.o
+ App/**/*.hi
+ dist
+ dist/**/*

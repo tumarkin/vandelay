@@ -19,7 +19,7 @@ import Debug.Trace
 
 data Command
     = Init [File] Output SortOptions SourceFileReferences
-    | Make File 
+    | Make [File] 
     deriving (Show)
 
 type File       = String
@@ -46,7 +46,7 @@ parseInit = Init
     <*> parseSourceFileReferences
 
 parseMake :: Parser Command
-parseMake = Make <$> argument str (metavar "VANDELAY-TEMPLATE")
+parseMake = Make <$> some (argument str (metavar "VANDELAY-TEMPLATE"))
 
 
 -- Initialization options
@@ -102,8 +102,8 @@ run cmd = do
 
     -- Get an EitherT IO as the result
     let resultEIO = case cmd of
-                      Init file out sort dfr -> initTemplate file out sort dfr
-                      Make file          -> makeTable file
+                      Init files out sort dfr -> initTemplate files out sort dfr
+                      Make files              -> makeTables   files
 
     -- Capture the result of type Either String (String, Handle)
     result <- runEitherT resultEIO

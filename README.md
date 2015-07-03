@@ -48,8 +48,8 @@ A precompiled binary for Mac OS X Mavericks is currently the only one available.
 
 * Improve user messages when a template is misspecified
 * Standardize error messages
-* *vandelay make* subcommand support glob patterns
 * Support scientific notation in source files.
+* **DONE** *vandelay make* subcommand support glob patterns
 * **DONE** *vandelay init* subcommand support glob patterns
 * **DONE** *vandelay init* supports multiple files with appropriate listing of variable names
 * **DONE** Support merging multiple estimation results files 
@@ -60,7 +60,7 @@ A precompiled binary for Mac OS X Mavericks is currently the only one available.
 **Low Priority**
 
 * Output to other formats (e.g. DOCX)
-* Warn user on nested substitutions.
+* Warn user on substitutions name non-exclusions, but allow for substitutions in substitutions.
 
 # Contributing
 To do 
