@@ -5,6 +5,7 @@ import App.Vandelay.Estimates
 import App.Vandelay.Template 
 import App.Vandelay.Core 
 import Control.Monad
+import Options.Applicative.Builder (readerError)
 import Control.Monad.IO.Class
 import Control.Monad.Trans.Either
 import Data.Maybe
@@ -17,14 +18,12 @@ import Debug.Trace
 
 
 data Command
-    = Init File Output SortOptions
+    = Init [File] Output SortOptions SourceFileReferences
     | Make File 
     deriving (Show)
 
 type File       = String
 type Output     = Maybe String
-
-
 
 
 
@@ -41,13 +40,13 @@ parseCommand = subparser $
 
 parseInit :: Parser Command
 parseInit = Init
-    <$> argument str (metavar "TAB-SEPARATED-FILE")
+    <$> some (argument str (metavar "TAB-SEPARATED-FILE"))
     <*> parseOutput
     <*> parseSortOptions
+    <*> parseSourceFileReferences
 
 parseMake :: Parser Command
 parseMake = Make <$> argument str (metavar "VANDELAY-TEMPLATE")
-
 
 
 -- Initialization options
@@ -59,6 +58,18 @@ parseOutput =
                        <> metavar "FILENAME"
                        <> help "Save initialization template file"
                        )
+
+parseSourceFileReferences :: Parser SourceFileReferences
+parseSourceFileReferences = option (str >>= readSourceFileReferences) ( long "include-source-file-references"
+                                  <> short 'i'
+                                  <> help "Include source file references for model and variable cross-referencing."
+                                  <> value NoSFR -- Default value
+                            )
+
+readSourceFileReferences :: String -> ReadM SourceFileReferences
+readSourceFileReferences s | lowercase s `elem` ["f","full"]         = return FullPath
+                           | lowercase s `elem` ["a","abbreviated"]  = return Abbreviation
+                           | otherwise                               = readerError $ unwords ["Source file referencing option", s, "not recognized. Use (F)ull or (A)bbreviated."]
 
 parseSortOptions = SortOptions
     <$> parseSortModels
@@ -91,7 +102,7 @@ run cmd = do
 
     -- Get an EitherT IO as the result
     let resultEIO = case cmd of
-                      Init file out sort -> initTemplate file out sort
+                      Init file out sort dfr -> initTemplate file out sort dfr
                       Make file          -> makeTable file
 
     -- Capture the result of type Either String (String, Handle)
@@ -129,11 +140,11 @@ main = do
 
 
 
--- Initialization test success and failure
-its = run (Init "test/activity_delegation_fully_combined.txt" Nothing (SortOptions True False))
-itf = run (Init "test/activity_delegation_fully_combined.txasdt" Nothing (SortOptions True False))
+-- -- Initialization test success and failure
+-- its = run (Init "test/activity_delegation_fully_combined.txt" Nothing (SortOptions True False))
+-- itf = run (Init "test/activity_delegation_fully_combined.txasdt" Nothing (SortOptions True False))
 
 
 
-art = run (Make "test/vl.acquisition_returns.yaml") 
+-- art = run (Make "test/vl.acquisition_returns.yaml") 
 

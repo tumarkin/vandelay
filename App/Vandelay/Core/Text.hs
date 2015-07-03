@@ -16,6 +16,7 @@ module App.Vandelay.Core.Text
   , pack
   , unpack
 
+  , lowercase
 
 
   ) where
@@ -99,4 +100,5 @@ eol =   try (string "\n\r")
     <|> string "\n"
     <|> string "\r"
 
+lowercase = map toLower
 
