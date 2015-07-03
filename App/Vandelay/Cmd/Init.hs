@@ -33,7 +33,8 @@ initTemplate :: [String]             -- ^ Estimation results filepaths
              -> SourceFileReferences -- ^ Use abbreviated model names
              -> EIO String ()        -- ^ Error message or ()
 initTemplate estPaths textOutFile sos ab = do
-  estFile    <- mapM safeReadFile estPaths
+  globs      <- lift (globPaths estPaths)
+  estFile    <- mapM safeReadFile globs
   (_,_,text) <- runRWST (writeConf >> writeTable >> writeSub ) (InitSetup estPaths estFile sos ab) ()
   
   safeWriteFile textOutFile text 

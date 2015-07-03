@@ -4,10 +4,14 @@ module App.Vandelay.Core.IO
   ( safeReadFile
   , safeReadFileWithError
   , safeWriteFile
+  , globPaths
   ) where
 
 import App.Vandelay.Core.Types
 import Data.Bool
+import Data.List
+import Control.Monad
+import System.FilePath.Glob
 import System.Directory
 import System.IO
 
@@ -68,3 +72,6 @@ safeCloseHandle h | h == stdout = return ()
 --     >> putChunkLn ( "Vandelay INSERT JOKE HERE." <> fore green <> bold) 
 --     >> hClose h
 
+
+globPaths :: [String] -> IO [FilePath]
+globPaths = liftM (nub . concat) . sequence . map glob

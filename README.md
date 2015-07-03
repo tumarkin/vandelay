@@ -48,9 +48,10 @@ A precompiled binary for Mac OS X Mavericks is currently the only one available.
 
 * Improve user messages when a template is misspecified
 * Standardize error messages
-* *vandelay make* subcommand support wildcard filenames
-* **DONE** *vandelay init* supports multiple files with appropriate listing of variable names
+* *vandelay make* subcommand support glob patterns
 * Support scientific notation in source files.
+* **DONE** *vandelay init* subcommand support glob patterns
+* **DONE** *vandelay init* supports multiple files with appropriate listing of variable names
 * **DONE** Support merging multiple estimation results files 
 * **DONE** Allow for comments in the template file
 * **DONE** Allow for missing data in variable lists (useful when multiple estimation results files are joined)
