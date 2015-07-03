@@ -15,3 +15,5 @@
  *.swp
  doc/**
  vandelay
+ **/*.o
+ **/*.hi
