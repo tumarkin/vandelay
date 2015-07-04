@@ -48,7 +48,8 @@ A precompiled binary for Mac OS X Mavericks is currently the only one available.
 
 * Improve user messages when a template is misspecified
 * Standardize error messages
-* Support scientific notation in source files.
+* Arbitrary scaling of numbers and formatting of missing data.
+* **DONE** Support scientific notation in source files.
 * **DONE** *vandelay make* subcommand support glob patterns
 * **DONE** *vandelay init* subcommand support glob patterns
 * **DONE** *vandelay init* supports multiple files with appropriate listing of variable names

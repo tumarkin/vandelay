@@ -22,15 +22,14 @@ module App.Vandelay.Core.Text
   ) where
 
 import Data.Char
-import Data.List hiding (endBy)
 import Data.List.Split hiding (endBy)
+import Data.Text (Text, pack, unpack)
+import Text.Parsec hiding (many, (<|>), optional)
 import Text.Printf
 import qualified Data.Text as T
-import Data.Text (Text, pack, unpack)
 
 import App.Vandelay.Core.Types
-import Control.Applicative hiding (optional)
-import Text.Parsec hiding (many, (<|>))
+import App.Vandelay.Core.Modules
 
 
 unwordEnglishList :: [String] -> String

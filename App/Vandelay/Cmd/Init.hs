@@ -7,17 +7,15 @@ module App.Vandelay.Cmd.Init
   ) where
 
 import App.Vandelay.Core
-import Control.Applicative
 import Control.Arrow
-import Control.Monad
-import Control.Monad.IO.Class
-import Control.Monad.Trans.Class 
-import Control.Monad.Trans.Either
 import Control.Monad.Trans.RWS
-import Data.List
 import System.FilePath
+
 import qualified Data.Map as M
 import qualified Data.Text as T
+
+
+
 
 liftEIO :: a -> EIO String a
 liftEIO = return 

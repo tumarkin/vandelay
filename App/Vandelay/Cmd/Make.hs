@@ -5,9 +5,6 @@ module App.Vandelay.Cmd.Make
   , makeTable
   ) where
 
-import Control.Applicative
-import Control.Monad
-import Control.Monad.Trans.Class
 import Control.Monad.Trans.RWS
 import Rainbow
 

@@ -31,12 +31,6 @@ module App.Vandelay.Estimates.Types
 
 import App.Vandelay.Core 
 
--- import Control.Monad.Trans.Reader
-import Control.Monad.RWS
-import Data.List
-import Control.Applicative
-
-
 data Estimates  = 
   Estimates { sourceFile   :: String
             , models       :: [ModelName]

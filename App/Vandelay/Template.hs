@@ -5,7 +5,3 @@ module App.Vandelay.Template
 import App.Vandelay.Template.Types   as X
 import App.Vandelay.Template.ParserT as X
 
-
-
-
-

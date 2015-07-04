@@ -2,19 +2,12 @@ module App.Vandelay.Template.ParserT
   ( readTemplateEIO
   ) where
 
-import Control.Applicative 
-import Control.Monad 
-import Control.Monad.Trans.Either
-import Control.Monad.Trans.Class
-import Data.List
-import Data.Maybe
-import Data.Monoid
 import Text.Parsec hiding (many, optional, (<|>))
 import qualified Data.Text as T
 
+import App.Vandelay.Core
 import App.Vandelay.Estimates
 import App.Vandelay.Template.Types
-import App.Vandelay.Core
 
 --- Debugging related
 import Debug.Trace

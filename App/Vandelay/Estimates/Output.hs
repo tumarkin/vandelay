@@ -2,11 +2,7 @@ module App.Vandelay.Estimates.Output
   ( outputRow
   ) where  
 
-import Control.Applicative
-import Data.List
 import Data.Either
-import Data.Maybe
-import Data.Monoid
 
 import App.Vandelay.Core 
 import App.Vandelay.Estimates.Types

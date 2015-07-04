@@ -4,17 +4,12 @@ import App.Vandelay.Cmd
 import App.Vandelay.Estimates
 import App.Vandelay.Template 
 import App.Vandelay.Core 
-import Control.Monad
-import Options.Applicative.Builder (readerError)
-import Control.Monad.IO.Class
-import Control.Monad.Trans.Either
-import Data.Maybe
-import Data.Monoid
-import Options.Applicative -- Provided by optparse-applicative
-import Rainbow
-import qualified Data.Text as T
 
-import Debug.Trace
+import Options.Applicative -- Provided by optparse-applicative
+import Options.Applicative.Builder (readerError)
+import Rainbow
+
+import qualified Data.Text as T
 
 
 data Command
@@ -33,20 +28,20 @@ withInfo opts desc = info (helper <*> opts) $ progDesc desc
 
 parseCommand :: Parser Command
 parseCommand = subparser $
-    command "init" (parseInit `withInfo` "Create a blank template from a tab-separated results file") <>
-    command "make" (parseMake `withInfo` "Generate LaTeX from a template file") 
+    command "init" (parseInit `withInfo` "Create a blank template from a tab-separated results file(s)") <>
+    command "make" (parseMake `withInfo` "Generate LaTeX from a template file(s)") 
     
 
 
 parseInit :: Parser Command
 parseInit = Init
-    <$> some (argument str (metavar "TAB-SEPARATED-FILE"))
+    <$> some (argument str (metavar "TAB-SEPARATED-FILE(S)"))
     <*> parseOutput
     <*> parseSortOptions
     <*> parseSourceFileReferences
 
 parseMake :: Parser Command
-parseMake = Make <$> some (argument str (metavar "VANDELAY-TEMPLATE"))
+parseMake = Make <$> some (argument str (metavar "VANDELAY-TEMPLATE(S)"))
 
 
 -- Initialization options
@@ -120,31 +115,4 @@ main = do
         (parseCommand `withInfo` "Generate LaTeX tables")
   return ()
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
--- -- Initialization test success and failure
--- its = run (Init "test/activity_delegation_fully_combined.txt" Nothing (SortOptions True False))
--- itf = run (Init "test/activity_delegation_fully_combined.txasdt" Nothing (SortOptions True False))
-
-
-
--- art = run (Make "test/vl.acquisition_returns.yaml") 
 

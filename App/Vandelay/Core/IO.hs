@@ -10,13 +10,13 @@ module App.Vandelay.Core.IO
   , globPaths
   ) where
 
-import App.Vandelay.Core.Types
 import Data.Bool
-import Data.List
-import Control.Monad
 import System.FilePath.Glob
 import System.Directory
 import System.IO
+
+import App.Vandelay.Core.Types
+import App.Vandelay.Core.Modules
 
 
 

@@ -2,9 +2,6 @@ module App.Vandelay.Template.Types
   ( VandelayTemplate(..)
   , blankVandelayTemplate
 
-  -- , Configuration(..)
-  -- , blankConfiguration
-
   , TableCommand(..)
 
   , safeGetDesiredModels
@@ -13,11 +10,9 @@ module App.Vandelay.Template.Types
 
   ) where
 
--- import App.Vandelay.Estimates
-import App.Vandelay.Estimates.Types
-import App.Vandelay.Estimates.ParserT
 import App.Vandelay.Core
-
+import App.Vandelay.Estimates.ParserT
+import App.Vandelay.Estimates.Types
 
 -- Vandalay Template 
 data VandelayTemplate =

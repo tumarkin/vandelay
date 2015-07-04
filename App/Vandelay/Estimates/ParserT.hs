@@ -6,10 +6,6 @@ module App.Vandelay.Estimates.ParserT
 
 import App.Vandelay.Estimates.Types
 import App.Vandelay.Core
-
-import Control.Applicative
-import Control.Monad.Trans.Either
-import Data.List
 import Text.Parsec hiding (many, optional, (<|>))
 
 
@@ -18,7 +14,7 @@ type EstParser = ParsecT String () (EIO String)
 
 
 readEstimatesEIO :: String  -- File name
-                 -> EitherT String IO Estimates
+                 -> EIO String Estimates
 readEstimatesEIO f = do
   txt <- safeReadFileWithError f "Estimates file" 
   r   <- runParserT (estimates f) () ("Estimates file: " ++ f) txt 
@@ -73,13 +69,19 @@ emptyCell = manyTill space (lookAhead (tab <|> (eol >> return ' '))) >> return B
 numberCell :: EstParser DataItem
 numberCell = ValData <$> number <*> sigStars 
 
-number = parNegNumber <|> negativeNumber <|> unsignedNumber
+number = parNegNumber <|> negativeNumber <|> unsignedExponentiatedNumber
+parNegNumber   = (0-) <$> (char '(' *> unsignedExponentiatedNumber <* char ')')
+negativeNumber = (0-) <$> (char '-' *> unsignedExponentiatedNumber)
 
-parNegNumber   = (0-) <$> (char '(' *> unsignedNumber <* char ')')
-negativeNumber = (0-) <$> (char '-' *> unsignedNumber)
+
+unsignedExponentiatedNumber :: EstParser Double
+unsignedExponentiatedNumber =
+  (*) <$> unsignedNumber <*> optionalExponent 
+
 
 unsignedNumber :: EstParser Double
-unsignedNumber =  try (read3 <$> many1 digit <*> string "." <*> many1 digit) 
+unsignedNumber =  
+      try (read3 <$> many1 digit <*> string "." <*> many1 digit) 
   <|> try (read3 <$> many1 digit <*> string "." <*> return "0" ) 
   <|> try (read3 <$> return "0"  <*> string "." <*> many1 digit) 
   <|> try (read3 <$> many1 digit <*> return ""  <*> return ""  ) 
@@ -88,6 +90,18 @@ unsignedNumber =  try (read3 <$> many1 digit <*> string "." <*> many1 digit)
 
 sigStars :: EstParser Int
 sigStars = length <$> many (char '*')
+
+
+unsignedInt :: EstParser Int
+unsignedInt = read <$> many1 digit
+
+signedInt :: EstParser Int
+signedInt = (*) <$> option 1 (char '-' >> return (-1)) <*> unsignedInt
+exponentialTerm :: EstParser Double
+exponentialTerm = (10^^) <$> (oneOf "eE" >> signedInt)
+
+optionalExponent :: EstParser Double
+optionalExponent  = option 1 exponentialTerm
 
 
 -- Parser tools
