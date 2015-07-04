@@ -19,3 +19,4 @@
  App/**/*.hi
  dist
  dist/**/*
+ MAKE.sh
