@@ -1,6 +1,5 @@
 module App.Vandelay.Estimates.Types
   ( Estimates(..)
-  -- , Coeff(..)
   , Cell
   , DataItem(..)
 
@@ -18,18 +17,21 @@ module App.Vandelay.Estimates.Types
   , getOItemIdx
   , getOFormat
   , getOSurround
+  , getOEmpty
 
-  , setName
-  , setCoeffs
-  , setItemIdx
-  , setFormat
-  , setSurround
+  -- | These are not currently used
+  , setOName 
+  , setOCoeffs
+  , setOItemIdx
+  , setOFormat
+  , setOSurround
 
   , texify
 
   ) where  
 
 import App.Vandelay.Core 
+
 
 data Estimates  = 
   Estimates { sourceFile   :: String
@@ -67,10 +69,10 @@ instance Monoid DataItem where
   mappend a         b = a
 
 -- instance Latexable DataItem where
-texify :: String -> DataItem -> String
-texify _   (StrData s) = "{" ++ s ++ "}"
-texify _   (BlankData)    = "" 
-texify fmt (ValData v s)  = commaPrintf fmt v ++ makeStars s
+texify :: OutputRequest -> DataItem -> String
+texify _  (StrData s)   = "{" ++ s ++ "}"
+texify or (BlankData)   = getOEmpty or 
+texify or (ValData v s) = commaPrintf (getOFormat or) ((getOScale or) * v) ++ makeStars s
 
 makeStars :: Int -> String
 makeStars i | i == 0    = ""
@@ -86,6 +88,8 @@ data OutputRequest =
                 , oItemIdx  :: Last Int
                 , oFormat   :: Last String
                 , oSurround :: Last (String, String)
+                , oScale    :: Last Double
+                , oEmpty    :: Last String
                 }
                 deriving (Show, Ord, Eq)
 
@@ -94,6 +98,8 @@ getOCoeffs   = fromJust . getLast . oCoeffs
 getOItemIdx  = fromJust . getLast . oItemIdx
 getOFormat   = fromJust . getLast . oFormat
 getOSurround = fromJust . getLast . oSurround
+getOScale    = fromJust . getLast . oScale
+getOEmpty    = fromJust . getLast . oEmpty
 
 defaultOutputRequest =
   OutputRequest { oName     = Last $ Just ""
@@ -101,6 +107,8 @@ defaultOutputRequest =
                 , oItemIdx  = Last $ Just 0
                 , oFormat   = Last $ Just "%1.3f"
                 , oSurround = Last $ Just ("", "")
+                , oScale    = Last $ Just 1
+                , oEmpty    = Last $ Just ""
                 }
 
 blankOutputRequest = 
@@ -109,6 +117,8 @@ blankOutputRequest =
                 , oItemIdx  = Last Nothing
                 , oFormat   = Last Nothing
                 , oSurround = Last Nothing
+                , oScale    = Last Nothing
+                , oEmpty    = Last Nothing
                 }
 
 instance Monoid OutputRequest where
@@ -119,13 +129,15 @@ instance Monoid OutputRequest where
                   , oItemIdx  = oItemIdx  a <> oItemIdx  b 
                   , oFormat   = oFormat   a <> oFormat   b 
                   , oSurround = oSurround a <> oSurround b 
+                  , oScale    = oScale    a <> oScale    b 
+                  , oEmpty    = oEmpty    a <> oEmpty    b 
                   }
   
-setName    t      = blankOutputRequest{oName = Last . Just $ t}
-setCoeffs cs      = blankOutputRequest{oCoeffs = Last . Just $ cs}
-setItemIdx i      = blankOutputRequest{oItemIdx = Last . Just $ i}
-setFormat t       = blankOutputRequest{oFormat = Last . Just $ t}
-setSurround (l,r) = blankOutputRequest{oSurround = Last . Just $ (l,r)}
+setOName    t      = blankOutputRequest{oName = Last . Just $ t}
+setOCoeffs cs      = blankOutputRequest{oCoeffs = Last . Just $ cs}
+setOItemIdx i      = blankOutputRequest{oItemIdx = Last . Just $ i}
+setOFormat t       = blankOutputRequest{oFormat = Last . Just $ t}
+setOSurround (l,r) = blankOutputRequest{oSurround = Last . Just $ (l,r)}
 
 
 

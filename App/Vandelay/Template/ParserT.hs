@@ -135,7 +135,7 @@ dataCommands = sepBy (spaces >> dataCommand) (char ';')
 
 dataCommand = 
    getState >>= \lastOr -> 
-      scale    <$>  (try (string "scale:")    *> many (noneOf ";\n"))
+      scale    <$>  (try (string "scale:")    *> spaces *> double)
   <|> surround <$>  (try (string "surround:") *> many (noneOf ";\n"))
   <|> statLine 
         lastOr <$>  (     string "stat:"      *> spaces *> int ) 
@@ -143,15 +143,17 @@ dataCommand =
   <|> name     <$>  (try (string "name:")     *> many (noneOf ";\n"))
   <|> code     <$>  (try (string "code:")     *> many (noneOf ";\n"))
   <|> format   <$>  (try (string "format:")   *> many (noneOf ";\n"))
+  <|> empty    <$>  (try (string "empty:")    *> many (noneOf ";\n"))
     where
-  scale t    = undefined
+  scale t    = Ordinal 2 blankOutputRequest{oScale    = Last (Just t)}
+  surround t = Ordinal 2 blankOutputRequest{oSurround = Last (Just (getSurround t)) }  -- (preStr, postStr)}
   statLine 
        lor i = Ordinal 1 lor{oName     = Last (Just ""), oItemIdx = Last (Just i)}
   name t     = Ordinal 2 blankOutputRequest{oName     = Last (Just t)}
   code t     = Ordinal 2 blankOutputRequest{oCoeffs   = Last .Just .stripSplitCommas $ t}
   index i    = Ordinal 2 blankOutputRequest{oItemIdx  = Last (Just i)}
   format t   = Ordinal 2 blankOutputRequest{oFormat   = Last (Just t)}
-  surround t = Ordinal 2 blankOutputRequest{oSurround = Last (Just (getSurround t)) }  -- (preStr, postStr)}
+  empty t    = Ordinal 2 blankOutputRequest{oEmpty    = Last (Just t)}
 
 getSurround t = let (preStr:postStr:other) = stripSplitCommas t
                 in (preStr,postStr)
@@ -239,6 +241,40 @@ stripStr = unpack . T.strip . pack
 
 int :: TemplateParser Int
 int = read <$> (spaces >> many digit) 
+
+
+
+-- | THIS IS COPIED FROM THE OTHER PARSER DIRECTLY
+double = parNegNumber <|> negativeNumber <|> unsignedExponentiatedNumber
+parNegNumber   = (0-) <$> (char '(' *> unsignedExponentiatedNumber <* char ')')
+negativeNumber = (0-) <$> (char '-' *> unsignedExponentiatedNumber)
+
+
+unsignedExponentiatedNumber :: TemplateParser Double
+unsignedExponentiatedNumber =
+  (*) <$> unsignedNumber <*> optionalExponent 
+
+
+unsignedNumber :: TemplateParser Double
+unsignedNumber =  
+      try (read3 <$> many1 digit <*> string "." <*> many1 digit) 
+  <|> try (read3 <$> many1 digit <*> string "." <*> return "0" ) 
+  <|> try (read3 <$> return "0"  <*> string "." <*> many1 digit) 
+  <|> try (read3 <$> many1 digit <*> return ""  <*> return ""  ) 
+    where 
+  read3 a b c = read (a++b++c)
+
+unsignedInt :: TemplateParser Int
+unsignedInt = read <$> many1 digit
+
+signedInt :: TemplateParser Int
+signedInt = (*) <$> option 1 (char '-' >> return (-1)) <*> unsignedInt
+exponentialTerm :: TemplateParser Double
+exponentialTerm = (10^^) <$> (oneOf "eE" >> signedInt)
+
+optionalExponent :: TemplateParser Double
+optionalExponent  = option 1 exponentialTerm
+
 
 
 

@@ -17,7 +17,7 @@ outputRow :: OutputRequest
 outputRow  or est ms = do
   result <- mapM (concatDataItems or est) ms 
   Right $ joinAmps ( getOName or : -- Name     
-                     map (surroundText or . texify (getOFormat or)) result
+                     map (surroundText or . texify or) result
                    ) 
           ++ "\\\\"
 

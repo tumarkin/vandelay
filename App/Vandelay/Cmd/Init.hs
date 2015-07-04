@@ -87,7 +87,7 @@ writeTable :: InitMonad ()
 writeTable = do
   tellLn "table:"
   tellLn "  template: header.tex # Subject to substitutions"
-  tellLn "  name: Print Name; code: coded_name; index: 0; surround: (,); format: %03.2f # Variable output. Only code is required"
+  tellLn "  name: Print Name; code: coded_name; index: 0; surround: (,); format: %03.2f; scale: 1.0; empty: - # Variable output. Only code is required"
   tellLn "  latex: \\addlinespace # Source latex code - do not add end lines "
   tellLn "" 
   tellLn "  # Variables are:" 

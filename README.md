@@ -44,11 +44,14 @@ A precompiled binary for Mac OS X Mavericks is currently the only one available.
 
 # To Do
 
-**Priority**
-
 * Improve user messages when a template is misspecified
 * Standardize error messages
-* Arbitrary scaling of numbers and formatting of missing data.
+* Output to other formats (e.g. DOCX)
+* Warn user when a name for a substitution embeds another, but allow for substitutions in substitutions.
+
+**Completed**
+
+* **DONE** Arbitrary scaling of numbers and formatting of missing data.
 * **DONE** Support scientific notation in source files.
 * **DONE** *vandelay make* subcommand support glob patterns
 * **DONE** *vandelay init* subcommand support glob patterns
@@ -58,10 +61,7 @@ A precompiled binary for Mac OS X Mavericks is currently the only one available.
 * **DONE** Allow for missing data in variable lists (useful when multiple estimation results files are joined)
 * **DONE** Allow data commands to end with a semicolon
 
-**Low Priority**
 
-* Output to other formats (e.g. DOCX)
-* Warn user on substitutions name non-exclusions, but allow for substitutions in substitutions.
 
 # Contributing
 To do 
