@@ -7,6 +7,7 @@ import qualified Data.Text as T
 
 import App.Vandelay.Core
 import App.Vandelay.Estimates
+import App.Vandelay.Shared.ParserT
 import App.Vandelay.Template.Types
 
 --- Debugging related
@@ -230,50 +231,9 @@ manyTillSectionHeader x = manyTill x (lookAhead sectionHeadOrEof)
 sourcePos :: TemplateParser SourcePos
 sourcePos = statePos `liftM` getParserState
 
--- parseInt :: TemplateParser SourcePos 
--- parseInt = do
---   numStr <- many1 digit
---   sourcePos
-
 -- Text utility functions
 stripStr :: String -> String
 stripStr = unpack . T.strip . pack 
-
-int :: TemplateParser Int
-int = read <$> (spaces >> many digit) 
-
-
-
--- | THIS IS COPIED FROM THE OTHER PARSER DIRECTLY
-double = parNegNumber <|> negativeNumber <|> unsignedExponentiatedNumber
-parNegNumber   = (0-) <$> (char '(' *> unsignedExponentiatedNumber <* char ')')
-negativeNumber = (0-) <$> (char '-' *> unsignedExponentiatedNumber)
-
-
-unsignedExponentiatedNumber :: TemplateParser Double
-unsignedExponentiatedNumber =
-  (*) <$> unsignedNumber <*> optionalExponent 
-
-
-unsignedNumber :: TemplateParser Double
-unsignedNumber =  
-      try (read3 <$> many1 digit <*> string "." <*> many1 digit) 
-  <|> try (read3 <$> many1 digit <*> string "." <*> return "0" ) 
-  <|> try (read3 <$> return "0"  <*> string "." <*> many1 digit) 
-  <|> try (read3 <$> many1 digit <*> return ""  <*> return ""  ) 
-    where 
-  read3 a b c = read (a++b++c)
-
-unsignedInt :: TemplateParser Int
-unsignedInt = read <$> many1 digit
-
-signedInt :: TemplateParser Int
-signedInt = (*) <$> option 1 (char '-' >> return (-1)) <*> unsignedInt
-exponentialTerm :: TemplateParser Double
-exponentialTerm = (10^^) <$> (oneOf "eE" >> signedInt)
-
-optionalExponent :: TemplateParser Double
-optionalExponent  = option 1 exponentialTerm
 
 
 

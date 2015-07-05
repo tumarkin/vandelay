@@ -4,9 +4,13 @@ module App.Vandelay.Estimates.ParserT
 
 -- import Debug.Trace
 
+import Text.Parsec hiding (many, optional, (<|>))
+
 import App.Vandelay.Estimates.Types
 import App.Vandelay.Core
-import Text.Parsec hiding (many, optional, (<|>))
+import App.Vandelay.Shared.ParserT
+
+
 
 
 type EstParser = ParsecT String () (EIO String)
@@ -67,41 +71,10 @@ emptyCell :: EstParser DataItem
 emptyCell = manyTill space (lookAhead (tab <|> (eol >> return ' '))) >> return BlankData
 
 numberCell :: EstParser DataItem
-numberCell = ValData <$> number <*> sigStars 
-
-number = parNegNumber <|> negativeNumber <|> unsignedExponentiatedNumber
-parNegNumber   = (0-) <$> (char '(' *> unsignedExponentiatedNumber <* char ')')
-negativeNumber = (0-) <$> (char '-' *> unsignedExponentiatedNumber)
-
-
-unsignedExponentiatedNumber :: EstParser Double
-unsignedExponentiatedNumber =
-  (*) <$> unsignedNumber <*> optionalExponent 
-
-
-unsignedNumber :: EstParser Double
-unsignedNumber =  
-      try (read3 <$> many1 digit <*> string "." <*> many1 digit) 
-  <|> try (read3 <$> many1 digit <*> string "." <*> return "0" ) 
-  <|> try (read3 <$> return "0"  <*> string "." <*> many1 digit) 
-  <|> try (read3 <$> many1 digit <*> return ""  <*> return ""  ) 
-    where 
-  read3 a b c = read (a++b++c)
+numberCell = ValData <$> double <*> sigStars 
 
 sigStars :: EstParser Int
 sigStars = length <$> many (char '*')
-
-
-unsignedInt :: EstParser Int
-unsignedInt = read <$> many1 digit
-
-signedInt :: EstParser Int
-signedInt = (*) <$> option 1 (char '-' >> return (-1)) <*> unsignedInt
-exponentialTerm :: EstParser Double
-exponentialTerm = (10^^) <$> (oneOf "eE" >> signedInt)
-
-optionalExponent :: EstParser Double
-optionalExponent  = option 1 exponentialTerm
 
 
 -- Parser tools
