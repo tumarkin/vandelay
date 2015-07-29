@@ -13,18 +13,18 @@ import App.Vandelay.Shared.ParserT
 
 
 
-type EstParser = ParsecT String () (EIO String)
+type EstParser = ParsecT String () (EIO ErrorMsg)
 
 
 
 readEstimatesEIO :: String  -- File name
-                 -> EIO String Estimates
+                 -> EIO ErrorMsg Estimates
 readEstimatesEIO f = do
   txt <- safeReadFileWithError f "Estimates file" 
   r   <- runParserT (estimates f) () ("Estimates file: " ++ f) txt 
   case r of 
     Left  parseErr -> left $ show parseErr
-    Right est       -> right est 
+    Right est      -> right est 
 
 
 -- Parser 
@@ -78,13 +78,6 @@ sigStars = length <$> many (char '*')
 
 
 -- Parser tools
-eol :: EstParser String
-eol =  try (string "\n\r")
-   <|> try (string "\r\n")
-   <|> string "\n"
-   <|> string "\r"
-
-
 sepByN :: Int
        -> EstParser a
        -> EstParser sep
@@ -124,10 +117,10 @@ listToListOfLists = map (:[])
 -- Data integrity
 validateEstimates :: Estimates -> Either String Estimates
 validateEstimates est | null dupmodels = Right est
-                      | otherwise      = Left $ "Duplicate estimation results: " ++ error
+                      | otherwise      = Left dupModelErr
     where 
-  dupmodels = map head . filter (\x -> length x > 1) . group . sort . models $ est
-  error     = unwordEnglishList dupmodels
+  dupmodels   = map head . filter (\x -> length x > 1) . group . sort . models $ est
+  dupModelErr = "Duplicate estimations results: " ++ unwordEnglishList dupmodels
 
 
 

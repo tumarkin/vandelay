@@ -52,7 +52,6 @@ data TableCommand = Latex    String
 
 
 -- Safe Accessors
-
 safeGetDesiredModels :: VandelayTemplate -> Either String [String] 
 safeGetTexfile       :: VandelayTemplate -> Either String String 
 safeGetEstimates     :: VandelayTemplate -> Either String [Estimates]
@@ -60,10 +59,9 @@ safeGetEstimates     :: VandelayTemplate -> Either String [Estimates]
 safeGetDesiredModels  = safeGetFromTemplate desiredModels "Models not specified"
 safeGetTexfile        = safeGetFromTemplate texfile "Output tex file not specified"
 
-safeGetFromTemplate :: (VandelayTemplate -> Last a) -- accessor function
-                       -> String -- error message
-                       -> VandelayTemplate 
-                       -> Either String a -- safe accessor
+safeGetFromTemplate :: (VandelayTemplate -> Last a)          -- | Accessor function
+                    -> String                                -- | Error message
+                    -> (VandelayTemplate -> Either String a) -- | Safe accessor
 safeGetFromTemplate f e vt | unspecified = Left e
                            | otherwise   = Right $ fromJust d
   where unspecified = isNothing d

@@ -17,10 +17,10 @@ import qualified Data.Text as T
 
 
 
-liftEIO :: a -> EIO String a
+liftEIO :: a -> EIO ErrorMsg a
 liftEIO = return 
 
-liftEIOString :: String -> EIO String String
+liftEIOString :: String -> EIO ErrorMsg String
 liftEIOString = return
 
 
@@ -29,7 +29,7 @@ initTemplate :: [String]             -- ^ Estimation results filepaths
              -> Maybe String         -- ^ Optional output file (stdout if nothing)
              -> SortOptions 
              -> SourceFileReferences -- ^ Use abbreviated model names
-             -> EIO String ()        -- ^ Error message or ()
+             -> EIO ErrorMsg ()        -- ^ Error message or ()
 initTemplate estPaths textOutFile sos ab = do
   globs      <- globPaths estPaths
   estFile    <- mapM safeReadFile globs
@@ -39,7 +39,7 @@ initTemplate estPaths textOutFile sos ab = do
 
 
 -- -- | Internal data types
-type InitMonad   = RWST InitSetup String () (EIO String)
+type InitMonad   = RWST InitSetup String () (EIO ErrorMsg)
 data InitSetup   = InitSetup 
   { dataFilePaths        :: [FilePath]
   , dataFileContents     :: [FileContent]

@@ -13,7 +13,7 @@ import App.Vandelay.Estimates.Types
 outputRow :: OutputRequest 
           -> [Estimates]
           -> [ModelName]    
-          -> Either String String 
+          -> Either ErrorMsg String 
 outputRow  or est ms = do
   result <- mapM (concatDataItems or est) ms 
   Right $ joinAmps ( getOName or : -- Name     
@@ -22,26 +22,27 @@ outputRow  or est ms = do
           ++ "\\\\"
 
 --- 
-concatDataItems :: OutputRequest -> [Estimates] -> ModelName -> Either String DataItem 
-concatDataItems  o es mn | null dataItems = Left $ unwords ["Coefficients", unwordEnglishList (getOCoeffs o), "not found in specification", mn, "\nUse coefficient 'missing' to allow for missing data if this is desired."]
+concatDataItems :: OutputRequest -> [Estimates] -> ModelName -> Either ErrorMsg DataItem 
+concatDataItems  o es mn | null dataItems = Left coefficientErr
                          | otherwise      = Right $ mconcat dataItems
     where 
-  dataItems = rights (map (lookupDataItem o es mn) . getOCoeffs $ o) 
+  dataItems      = rights (map (lookupDataItem o es mn) . getOCoeffs $ o)
+  coefficientErr = unwords ["Coefficients", unwordEnglishList (getOCoeffs o), "not found in specification", mn, "\nUse coefficient 'missing' to allow for missing data if this is desired."]
     
 
 
-lookupDataItem :: OutputRequest -> [Estimates] -> ModelName -> CoefName -> Either String DataItem
+lookupDataItem :: OutputRequest -> [Estimates] -> ModelName -> CoefName -> Either ErrorMsg DataItem
 lookupDataItem o e m c | c == "missing" = Right BlankData
                        | otherwise      =
                             (!!) <$> lookupCell m c e <*> return (getOItemIdx o) 
 
 
-lookupCell :: ModelName -> CoefName -> [Estimates] -> Either String Cell
+lookupCell :: ModelName -> CoefName -> [Estimates] -> Either ErrorMsg Cell
 lookupCell m c e = 
   lookupCellInEst m c =<< findEstimatesWithModel m e
 
 
-lookupCellInEst :: ModelName -> CoefName -> Estimates -> Either String Cell
+lookupCellInEst :: ModelName -> CoefName -> Estimates -> Either ErrorMsg Cell
 lookupCellInEst m c e | m `notElem` models e       = Left noModelErr
                       | c `notElem` coefficients e = Left noCoeffErr
                       | otherwise                  = Right . fromJust . lookup (m,c) . eData $ e
@@ -49,7 +50,7 @@ lookupCellInEst m c e | m `notElem` models e       = Left noModelErr
         noCoeffErr = unwords ["Coefficient", c, "not found in estimates", sourceFile e]
 
 
-findEstimatesWithModel :: ModelName -> [Estimates] -> Either String Estimates
+findEstimatesWithModel :: ModelName -> [Estimates] -> Either ErrorMsg Estimates
 findEstimatesWithModel m es | null validEst       = Left noModelErr
                             | length validEst > 1 = Left multiModelErr
                             | otherwise           = Right $ head validEst

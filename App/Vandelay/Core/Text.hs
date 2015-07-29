@@ -71,10 +71,10 @@ doSubstitution src =
 
 type CommentParser = Parsec String ()
 
-removeCommentsEIO :: String -> EIO String String 
+removeCommentsEIO :: String -> EIO ErrorMsg String 
 removeCommentsEIO = hoistEither . removeComments
 
-removeComments :: String -> Either String String
+removeComments :: String -> Either ErrorMsg String
 removeComments s =
   case runParser commentedText () "Comment removal source" s of 
     Left  e -> Left $ show e

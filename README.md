@@ -45,12 +45,12 @@ A precompiled binary for Mac OS X Mavericks is currently the only one available.
 # To Do
 
 * Improve user messages when a template is misspecified
-* Standardize error messages
 * Output to other formats (e.g. DOCX)
 * Warn user when a name for a substitution embeds another, but allow for substitutions in substitutions.
 
 **Completed**
 
+* **DONE** Standardize error messages
 * **DONE** Arbitrary scaling of numbers and formatting of missing data.
 * **DONE** Support scientific notation in source files.
 * **DONE** *vandelay make* subcommand support glob patterns

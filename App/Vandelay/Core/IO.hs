@@ -22,45 +22,45 @@ import App.Vandelay.Core.Modules
 
 unsafeWriteFile :: Maybe String -- Optional output filename 
                 -> String       -- The text to output
-                -> EIO String ()
+                -> EIO ErrorMsg ()
 unsafeWriteFile fo t = do
   h <- unsafeGetHandle fo
   liftIO $ hPutStrLn h t >> safeCloseHandle h
 
 
-safeReadFileWithError :: String -> String -> EIO String String
+safeReadFileWithError :: String -> String -> EIO ErrorMsg String
 safeReadFileWithError f e = do 
   exists <- liftIO . doesFileExist $ f
   if exists then liftIO (readFile f) 
-            else left $ unwords [e,f,"not found."]
+            else left $ fileNotFoundMsg f e 
 
-safeReadFile :: String -> EIO String String
+safeReadFile :: String -> EIO ErrorMsg String
 safeReadFile f = safeReadFileWithError f "File"
 
 
 safeWriteFile :: Maybe String -- Optional output filename 
               -> String       -- The text to output
-              -> EIO String ()
+              -> EIO ErrorMsg ()
 safeWriteFile fo t = do
   h <- safeGetHandle fo
   liftIO $ hPutStrLn h t >> safeCloseHandle h
 
-safeGetHandle :: Maybe String -> EIO String Handle
+safeGetHandle :: Maybe String -> EIO ErrorMsg Handle
 safeGetHandle Nothing = return stdout 
 safeGetHandle (Just t)= 
   (liftIO . doesFileExist $ t)
   >>= bool (unsafeGetHandle (Just t))  -- Does not exist
            (overwriteHandle t)         -- Exists
 
-overwriteHandle :: String -> EIO String Handle
+overwriteHandle :: String -> EIO ErrorMsg Handle
 overwriteHandle t = do
   liftIO . putStrLn $ unwords ["File",t,"exists. Overwrite (y/n)?"]
   ans <- liftIO getLine
   if ans == "y" then unsafeGetHandle $ Just t
-                else left "Execution halted."
+                else left $ userHaltMessage 
 
 
-unsafeGetHandle  :: Maybe String -> EIO String Handle
+unsafeGetHandle  :: Maybe String -> EIO ErrorMsg Handle
 unsafeGetHande  Nothing  = return stdout
 unsafeGetHandle (Just t) = liftIO $ openFile t WriteMode 
 
@@ -84,17 +84,21 @@ safeCloseHandle h | h == stdout = return ()
 
 
 
-globPaths :: [String] -> EIO String [FilePath]
+globPaths :: [String] -> EIO ErrorMsg [FilePath]
 globPaths = liftM (nub . concat) . sequence . map safeGlob
 
 
-safeGlob :: String  -> EIO String [FilePath]
+safeGlob :: String  -> EIO ErrorMsg [FilePath]
 safeGlob s = do
   gs <- liftIO . glob $ s
   case gs of 
-    [] -> left $ unwords ["No files found matching pattern",s]
+    [] -> left $ globPatternErrorMsg s
     gs -> right gs
 
 
 
 
+-- Error Messages
+fileNotFoundMsg f e = unwords [e,f,"not found."]
+userHaltMessage     = "Execution halted."
+globPatternErrorMsg s = unwords ["No files found matching pattern",s]

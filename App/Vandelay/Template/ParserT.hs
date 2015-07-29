@@ -17,7 +17,7 @@ traceControl = False
 
 --- External interface
 readTemplateEIO :: String  -- File name
-                 -> EIO String VandelayTemplate
+                 -> EIO ErrorMsg VandelayTemplate
 readTemplateEIO f = do
   txt <- safeReadFileWithError f "Template file" >>= removeCommentsEIO
   t   <- runParserT tablefile defaultOutputRequest ("Template file: " ++ f) txt 
@@ -33,7 +33,7 @@ readTemplateEIO f = do
 
 
 --- Parser
-type TemplateParser    = ParsecT String UserState (EIO String)
+type TemplateParser    = ParsecT String UserState (EIO ErrorMsg)
 
 type LastOutputRequest = OutputRequest
 type UserState         = LastOutputRequest
@@ -186,12 +186,17 @@ subCommands = do
   s  <- manyTill anyChar eol 
   ss <- many (try (indentedOrBlankLine indentlevel)) 
 
-  return (pack (stripStr name), pack (unlines (stripStr s : map stripStr ss)))
+  return (pack (stripStr name), -- Strip the spaces around the name
+          T.dropWhileEnd isCRLF . pack . unlines $ stripStr s : map stripStr ss -- Strip the spaces around each line and trim any trailing carriage returns
+         ) 
 
 
 subDeclaration = 
   space1 *> many (noneOf ":\n\r") 
     <*  ( char ':' <?> "Colon needed to declare text source for substitutions.")
+
+isCRLF :: Char -> Bool
+isCRLF c = c `elem` "\n\r"
 
 
 
@@ -211,11 +216,6 @@ basicCommand codestr fcn =
 
 
 space1    = space >> spaces
-
-eol =  try (string "\n\r")
-   <|> try (string "\r\n")
-   <|> string "\n"
-   <|> string "\r"
 
 sectionHeadOrEof :: TemplateParser String
 sectionHeadOrEof =

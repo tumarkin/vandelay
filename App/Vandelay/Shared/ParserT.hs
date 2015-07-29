@@ -5,6 +5,8 @@ module App.Vandelay.Shared.ParserT
   , unsignedInt
 
   , double
+
+  , eol
   ) where
 
 import Control.Applicative 
@@ -50,4 +52,12 @@ exponentialTerm = (10^^) <$> (oneOf "eE" >> int)
 optionalExponent :: Stream s m Char => ParsecT s u m Double
 optionalExponent  = option 1 exponentialTerm
 
+
+-- End of line
+
+eol :: Stream s m Char => ParsecT s u m String
+eol =  try (string "\n\r")
+   <|> try (string "\r\n")
+   <|> string "\n"
+   <|> string "\r"
 

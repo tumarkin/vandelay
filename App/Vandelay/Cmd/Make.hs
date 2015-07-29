@@ -14,15 +14,15 @@ import App.Vandelay.Template
 
 
 
-makeTables :: [String]      -- ^ Vandelay template filepath globs
-           -> EIO String () -- ^ Error message or () 
+makeTables :: [String]        -- ^ Vandelay template filepath globs
+           -> EIO ErrorMsg () -- ^ Error message or () 
 makeTables gs = do
   globs <- globPaths gs
   mapM_ makeTable globs
 
 -- | Create a LaTeX table from a Vandelay template
-makeTable :: String        -- ^ Vandelay template filepath
-          -> EIO String () -- ^ Error message or () 
+makeTable :: String          -- ^ Vandelay template filepath
+          -> EIO ErrorMsg () -- ^ Error message or () 
 makeTable templatePath = do 
   template  <- readTemplateEIO templatePath
   outFile   <- hoistEither . safeGetTexfile $ template
@@ -33,8 +33,8 @@ makeTable templatePath = do
   unsafeWriteFile (Just outFile) res
 
 
---- Internal data types 
-type MakeMonad      = RWST VandelayTemplate String () (EIO String)
+-- | Internal data types 
+type MakeMonad      = RWST VandelayTemplate String () (EIO ErrorMsg)
 runMakeMonad mm vtl = runRWST mm vtl ()
 
 askTable         :: MakeMonad [TableCommand]
@@ -52,7 +52,7 @@ createOutput :: MakeMonad ()
 createOutput =  mapM_ doTableCommand =<< askTable
 
 doTableCommand :: TableCommand -> MakeMonad () 
-doTableCommand (Latex l)    = tellLn $ l ++ "\\\\" 
+doTableCommand (Latex l)    = tellLn $ l -- ++ "\\\\" 
 doTableCommand (Template t) = tellLn =<< return doSubstitution `ap` (lift . safeReadFile $ t) `ap` askSubstitutions
 doTableCommand (Data   or)  = tellLn =<< lift . hoistEither =<< return outputRow `ap` return or `ap` askEstimates `ap` askDesiredModels
 

@@ -76,7 +76,7 @@ texify or (ValData v s) = commaPrintf (getOFormat or) ((getOScale or) * v) ++ ma
 
 makeStars :: Int -> String
 makeStars i | i == 0    = ""
-            | otherwise = "\\textsymbol{" ++ (concat . replicate i $ "*") ++ "}"
+            | otherwise = "\\sym{" ++ (concat . replicate i $ "*") ++ "}"
 
 
 
