@@ -14,12 +14,12 @@ catchIO = Exception.catch
 
 
 version :: Version
-version = Version {versionBranch = [0,1,1,2], versionTags = []}
+version = Version {versionBranch = [0,1,1,3], versionTags = []}
 bindir, libdir, datadir, libexecdir, sysconfdir :: FilePath
 
 bindir     = "/Users/roberttumarkin/Library/Haskell/bin"
-libdir     = "/Users/roberttumarkin/Library/Haskell/ghc-7.8.3-x86_64/lib/vandelay-0.1.1.2"
-datadir    = "/Users/roberttumarkin/Library/Haskell/share/ghc-7.8.3-x86_64/vandelay-0.1.1.2"
+libdir     = "/Users/roberttumarkin/Library/Haskell/ghc-7.8.3-x86_64/lib/vandelay-0.1.1.3"
+datadir    = "/Users/roberttumarkin/Library/Haskell/share/ghc-7.8.3-x86_64/vandelay-0.1.1.3"
 libexecdir = "/Users/roberttumarkin/Library/Haskell/libexec"
 sysconfdir = "/Users/roberttumarkin/Library/Haskell/etc"
 

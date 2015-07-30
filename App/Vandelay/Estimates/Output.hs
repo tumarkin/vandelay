@@ -17,7 +17,7 @@ outputRow :: OutputRequest
 outputRow  or est ms = do
   result <- mapM (concatDataItems or est) ms 
   Right $ joinAmps ( getOName or : -- Name     
-                     map (surroundText or . texify or) result
+                     map (texify or) result
                    ) 
           ++ "\\\\"
 
@@ -57,10 +57,6 @@ findEstimatesWithModel m es | null validEst       = Left noModelErr
   where validEst      = filter (elem m . models) es
         noModelErr    = unwords ["Model", m, "not found in data files", unwordEnglishList (map sourceFile es) ]
         multiModelErr = unwords ["Model", m, "found in multiple data files.\nFound in ", unwordEnglishList (map sourceFile validEst)]
-
-surroundText :: OutputRequest -> String -> String
-surroundText or s = let (prefix, postfix) = getOSurround or
-                     in prefix ++ s ++ postfix
 
 
 

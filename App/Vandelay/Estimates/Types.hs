@@ -72,12 +72,15 @@ instance Monoid DataItem where
 texify :: OutputRequest -> DataItem -> String
 texify _  (StrData s)   = "{" ++ s ++ "}"
 texify or (BlankData)   = getOEmpty or 
-texify or (ValData v s) = commaPrintf (getOFormat or) ((getOScale or) * v) ++ makeStars s
+texify or (ValData v s) = surroundText or (commaPrintf (getOFormat or) ((getOScale or) * v)) ++ makeStars s
 
 makeStars :: Int -> String
 makeStars i | i == 0    = ""
             | otherwise = "\\sym{" ++ (concat . replicate i $ "*") ++ "}"
 
+surroundText :: OutputRequest -> String -> String
+surroundText or s = let (prefix, postfix) = getOSurround or
+                     in prefix ++ s ++ postfix
 
 
 -- Output request
