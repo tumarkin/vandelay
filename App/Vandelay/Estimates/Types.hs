@@ -31,6 +31,9 @@ module App.Vandelay.Estimates.Types
   ) where  
 
 import App.Vandelay.Core 
+import Control.Arrow
+-- import Data.Char
+-- import Data.List
 
 
 data Estimates  = 
@@ -72,7 +75,7 @@ instance Monoid DataItem where
 texify :: OutputRequest -> DataItem -> String
 texify _  (StrData s)   = "{" ++ s ++ "}"
 texify or (BlankData)   = getOEmpty or 
-texify or (ValData v s) = surroundText or (commaPrintf (getOFormat or) ((getOScale or) * v)) ++ makeStars s
+texify or (ValData v s) = changeAllZeros (surroundText or (commaPrintf (getOFormat or) ((getOScale or) * v))) ++ makeStars s
 
 makeStars :: Int -> String
 makeStars i | i == 0    = ""
@@ -81,6 +84,21 @@ makeStars i | i == 0    = ""
 surroundText :: OutputRequest -> String -> String
 surroundText or s = let (prefix, postfix) = getOSurround or
                      in prefix ++ s ++ postfix
+
+changeAllZeros :: String -> String
+changeAllZeros s = if   any (flip elem $ ['1'..'9']) s then s
+                   else changeLast0 . addLessThan $ s
+  where
+    addLessThan = replaceFirst '0' "$<$0" 
+    changeLast0 = replaceLast '0' "1" 
+
+replaceFirst :: (Eq a) => a -> [a] -> [a] -> [a]
+replaceFirst cFrom sTo = uncurry (++) . second ( \x -> sTo ++ tail x) . break (== cFrom)
+
+replaceLast :: (Eq a) => a -> [a] -> [a] -> [a]
+replaceLast cFrom sTo = reverse . replaceFirst cFrom sTo . reverse 
+
+
 
 
 -- Output request

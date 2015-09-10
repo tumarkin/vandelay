@@ -1,5 +1,3 @@
-{-# LANGUAGE OverloadedStrings #-}
-
 import App.Vandelay.Cmd
 import App.Vandelay.Estimates
 import App.Vandelay.Template 
@@ -104,7 +102,7 @@ run cmd = do
     result <- runEitherT resultEIO
 
     case result of 
-      Left err  -> putChunkLn ( "Vandelay error:" <> fore red <> bold) 
+      Left err  -> putChunkLn ( chunk "Vandelay error:" <> fore red <> bold) 
                 >> putStrLn err
       Right _   -> return () 
 
@@ -116,3 +114,4 @@ main = do
   return ()
 
 
+chunk = chunkFromText . T.pack

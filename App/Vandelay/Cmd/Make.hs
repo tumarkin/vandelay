@@ -1,11 +1,10 @@
-{-# LANGUAGE OverloadedStrings #-}
-
 module App.Vandelay.Cmd.Make
   ( makeTables
   , makeTable
   ) where
 
 import Control.Monad.Trans.RWS
+import qualified Data.Text as T
 import Rainbow
 
 import App.Vandelay.Core 
@@ -28,7 +27,7 @@ makeTable templatePath = do
   outFile   <- hoistEither . safeGetTexfile $ template
   (_,_,res) <- runMakeMonad createOutput template
 
-  liftIO . putChunk $ ( "Success: " <> fore green <> bold) 
+  liftIO . putChunk $ ( chunk "Success: " <> fore green <> bold) 
   liftIO . putStrLn $ templatePath
   unsafeWriteFile (Just outFile) res
 
@@ -61,3 +60,5 @@ doTableCommand (Data   or)  = tellLn =<< lift . hoistEither =<< return outputRow
 tellLn s = tell $ s ++ "\n"
 
 
+
+chunk = chunkFromText . T.pack

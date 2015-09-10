@@ -60,7 +60,7 @@ A precompiled binary for Mac OS X Mavericks is currently the only one available.
 * **DONE** Allow for comments in the template file
 * **DONE** Allow for missing data in variable lists (useful when multiple estimation results files are joined)
 * **DONE** Allow data commands to end with a semicolon
-
+* **DONE** 0.00000 is changed to <0.00001 (for arbitrary number of zeros)
 
 
 # Contributing

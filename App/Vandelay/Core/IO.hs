@@ -61,7 +61,7 @@ overwriteHandle t = do
 
 
 unsafeGetHandle  :: Maybe String -> EIO ErrorMsg Handle
-unsafeGetHande  Nothing  = return stdout
+unsafeGetHandle Nothing  = return stdout
 unsafeGetHandle (Just t) = liftIO $ openFile t WriteMode 
 
 
