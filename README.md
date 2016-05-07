@@ -38,9 +38,9 @@ A precompiled binary for Mac OS X Mavericks is currently the only one available.
 
 *vandelay* is written in Haskell. To compile from source, 
 
-* Install Haskell. The Haskell Platform is recommended: <https://www.haskell.org/platform/>. 
+* Install Stack: http://haskellstack.org
 * Clone this repository. 
-* Use the command `cabal install vandelay.cabal` from the project root directory.
+* Use the command `stack install` from the project root directory.
 
 # To Do
 
