@@ -6,6 +6,7 @@ import App.Vandelay.Core
 import Options.Applicative -- Provided by optparse-applicative
 import Options.Applicative.Builder (readerError)
 import Rainbow
+import qualified Rainbow.Translate as RT
 
 import qualified Data.Text as T
 
@@ -102,9 +103,10 @@ run cmd = do
     result <- runEitherT resultEIO
 
     case result of 
-      Left err  -> putChunkLn ( chunk "Vandelay error:" <> fore red <> bold) 
+      Left err  -> (RT.putChunkLn $ Rainbow.chunk "Vandelay error:" & fore red & bold)
                 >> putStrLn err
       Right _   -> return () 
+
 
 
 main :: IO ()
@@ -114,4 +116,3 @@ main = do
   return ()
 
 
-chunk = chunkFromText . T.pack

@@ -90,7 +90,7 @@ configDataFile = do
 
 
 -- error "configDataFile not defined" -- basicCommand "data:" (\p -> blankConfiguration{datafile = Last . Just $ p})
-configModels   = basicCommand "models:" (\p -> blankVandelayTemplate{desiredModels = Last . Just . stripSplitCommas$ p})
+configModels   = basicCommand "models:" (\p -> blankVandelayTemplate{desiredModels = stripSplitCommas$ p})
 configTexfile  = basicCommand "tex:" (\p -> blankVandelayTemplate{texfile = Last . Just $ p})
  
 

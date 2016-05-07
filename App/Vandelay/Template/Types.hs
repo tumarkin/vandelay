@@ -16,7 +16,7 @@ import App.Vandelay.Estimates.Types
 
 -- Vandalay Template 
 data VandelayTemplate =
-  VandelayTemplate { desiredModels :: Last [String]
+  VandelayTemplate { desiredModels :: [String]
                    , texfile       :: Last String
                    , estimates     :: [Estimates]
                    , table         :: [TableCommand]
@@ -25,7 +25,7 @@ data VandelayTemplate =
                 deriving (Show)
 
 blankVandelayTemplate = 
-  VandelayTemplate { desiredModels = Last Nothing
+  VandelayTemplate { desiredModels = []
                    , texfile       = Last Nothing
                    , estimates     = []
                    , table         = []
@@ -56,7 +56,6 @@ safeGetDesiredModels :: VandelayTemplate -> Either String [String]
 safeGetTexfile       :: VandelayTemplate -> Either String String 
 safeGetEstimates     :: VandelayTemplate -> Either String [Estimates]
 
-safeGetDesiredModels  = safeGetFromTemplate desiredModels "Models not specified"
 safeGetTexfile        = safeGetFromTemplate texfile "Output tex file not specified"
 
 safeGetFromTemplate :: (VandelayTemplate -> Last a)          -- | Accessor function
@@ -69,3 +68,6 @@ safeGetFromTemplate f e vt | unspecified = Left e
 
 safeGetEstimates vt | null . estimates $ vt = Left "Estimate file not specified"
                     | otherwise             = Right $ estimates vt
+
+safeGetDesiredModels vt | null . desiredModels $ vt = Left  "Models not specified"
+                        | otherwise                 = Right $ desiredModels vt

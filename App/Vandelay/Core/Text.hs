@@ -44,11 +44,11 @@ commaPrintf :: String -- Format
 commaPrintf fmt d = commify . printf fmt $ d
 
 commify :: String -> String
-commify s = commiint ++ fractional
+commify s = revPrefix ++ commiint ++ fractional
     where
   (dirtyInt, fractional)  = break ( == '.' ) s
-  (revPrefix, revInteger) = break isDigit . reverse $ dirtyInt
-  commiint                = reverse . intercalate "," . chunksOf 3 $ revInteger
+  (revInteger, revPrefix) = span isDigit . reverse $ dirtyInt
+  commiint                = reverse . intercalate "," . chunksOf 3 . stripString $ revInteger
 
 joinAmps :: [String] -> String
 joinAmps = intercalate " & " 
@@ -66,6 +66,9 @@ doSubstitution src =
   unpack . foldl (\s (a,b) -> T.replace a b s) (pack src)
 
 
+
+stripString :: String -> String
+stripString = unpack . T.strip . pack
 
 
 

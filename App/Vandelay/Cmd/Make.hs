@@ -6,6 +6,7 @@ module App.Vandelay.Cmd.Make
 import Control.Monad.Trans.RWS
 import qualified Data.Text as T
 import Rainbow
+import qualified Rainbow.Translate as RT
 
 import App.Vandelay.Core 
 import App.Vandelay.Estimates
@@ -27,7 +28,7 @@ makeTable templatePath = do
   outFile   <- hoistEither . safeGetTexfile $ template
   (_,_,res) <- runMakeMonad createOutput template
 
-  liftIO . putChunk $ ( chunk "Success: " <> fore green <> bold) 
+  liftIO . RT.putChunk $ Rainbow.chunk "Success: " & fore green
   liftIO . putStrLn $ templatePath
   unsafeWriteFile (Just outFile) res
 
@@ -61,4 +62,4 @@ tellLn s = tell $ s ++ "\n"
 
 
 
-chunk = chunkFromText . T.pack
+-- chunk = chunkFromText . T.pack
