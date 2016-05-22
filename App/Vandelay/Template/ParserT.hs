@@ -43,7 +43,7 @@ tablefile :: TemplateParser VandelayTemplate
 tablefile = 
   -- skipMany blankline *> many section <* eof -- Generates a list of Vandelay templates 
   -- >>= return . mconcat                      -- Concates the Vandelay template monoids into a single table
-  liftM mconcat (skipMany blankline *> many section <* eof) 
+  mconcat <$> (skipMany blankline *> many section <* eof) 
 
 
 section :: TemplateParser VandelayTemplate 
@@ -90,7 +90,7 @@ configDataFile = do
 
 
 -- error "configDataFile not defined" -- basicCommand "data:" (\p -> blankConfiguration{datafile = Last . Just $ p})
-configModels   = basicCommand "models:" (\p -> blankVandelayTemplate{desiredModels = stripSplitCommas$ p})
+configModels   = basicCommand "models:" (\p -> blankVandelayTemplate{desiredModels = stripSplitCommas p})
 configTexfile  = basicCommand "tex:" (\p -> blankVandelayTemplate{texfile = Last . Just $ p})
  
 

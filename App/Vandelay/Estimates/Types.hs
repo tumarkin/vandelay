@@ -74,8 +74,8 @@ instance Monoid DataItem where
 -- instance Latexable DataItem where
 texify :: OutputRequest -> DataItem -> String
 texify _  (StrData s)   = "{" ++ s ++ "}"
-texify or (BlankData)   = getOEmpty or 
-texify or (ValData v s) = changeAllZeros (surroundText or (commaPrintf (getOFormat or) ((getOScale or) * v))) ++ makeStars s
+texify or  BlankData    = getOEmpty or 
+texify or (ValData v s) = changeAllZeros (surroundText or (commaPrintf (getOFormat or) (getOScale or * v))) ++ makeStars s
 
 makeStars :: Int -> String
 makeStars i | i == 0    = ""
@@ -86,7 +86,7 @@ surroundText or s = let (prefix, postfix) = getOSurround or
                      in prefix ++ s ++ postfix
 
 changeAllZeros :: String -> String
-changeAllZeros s = if   any (flip elem $ ['1'..'9']) s then s
+changeAllZeros s = if   any (`elem` ['1'..'9']) s then s
                    else changeLast0 . addLessThan $ s
   where
     addLessThan = replaceFirst '0' "$<$0" 

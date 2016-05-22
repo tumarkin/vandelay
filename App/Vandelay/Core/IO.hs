@@ -57,7 +57,7 @@ overwriteHandle t = do
   liftIO . putStrLn $ unwords ["File",t,"exists. Overwrite (y/n)?"]
   ans <- liftIO getLine
   if ans == "y" then unsafeGetHandle $ Just t
-                else left $ userHaltMessage 
+                else left userHaltMessage 
 
 
 unsafeGetHandle  :: Maybe String -> EIO ErrorMsg Handle
@@ -85,7 +85,7 @@ safeCloseHandle h | h == stdout = return ()
 
 
 globPaths :: [String] -> EIO ErrorMsg [FilePath]
-globPaths = liftM (nub . concat) . sequence . map safeGlob
+globPaths = liftM (nub . concat) . mapM safeGlob
 
 
 safeGlob :: String  -> EIO ErrorMsg [FilePath]

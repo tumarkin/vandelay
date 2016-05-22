@@ -41,7 +41,7 @@ unwordEnglishList ss      = intercalate ", " (init ss) ++ ", and " ++ last ss
 commaPrintf :: String -- Format
             -> Double -- Value
             -> String
-commaPrintf fmt d = commify . printf fmt $ d
+commaPrintf fmt = commify . printf fmt
 
 commify :: String -> String
 commify s = revPrefix ++ commiint ++ fractional

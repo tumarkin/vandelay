@@ -103,7 +103,7 @@ run cmd = do
     result <- runEitherT resultEIO
 
     case result of 
-      Left err  -> (RT.putChunkLn $ Rainbow.chunk "Vandelay error:" & fore red & bold)
+      Left err  -> RT.putChunkLn (Rainbow.chunk "Vandelay error:" & fore red)
                 >> putStrLn err
       Right _   -> return () 
 

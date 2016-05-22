@@ -182,13 +182,13 @@ askPath           = asks dataFilePaths
 askContents       = asks dataFileContents
 askContentsRefs   = zip <$> askContents <*> askFileReferences
 askSortOptions    = asks sortOptions 
-askSortModels     = liftM sortModels askSortOptions
-askSortVars       = liftM sortVars   askSortOptions
+askSortModels     = sortModels <$> askSortOptions
+askSortVars       = sortVars   <$> askSortOptions
 askFileReferences = do
   a <- asks sourceFileReferences
   case a of 
     Abbreviation -> return abbreviations 
-    otherwise    -> asks dataFilePaths
+    _            -> asks dataFilePaths
 
 
 

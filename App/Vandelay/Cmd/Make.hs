@@ -23,7 +23,7 @@ makeTables gs = do
 -- | Create a LaTeX table from a Vandelay template
 makeTable :: String          -- ^ Vandelay template filepath
           -> EIO ErrorMsg () -- ^ Error message or () 
-makeTable templatePath = do 
+makeTable templatePath = addFilepathIfError $ do 
   template  <- readTemplateEIO templatePath
   outFile   <- hoistEither . safeGetTexfile $ template
   (_,_,res) <- runMakeMonad createOutput template
@@ -31,6 +31,9 @@ makeTable templatePath = do
   liftIO . RT.putChunk $ Rainbow.chunk "Success: " & fore green
   liftIO . putStrLn $ templatePath
   unsafeWriteFile (Just outFile) res
+
+  where
+    addFilepathIfError = prependError ("In template: " ++ templatePath ++ "\n")
 
 
 -- | Internal data types 
@@ -52,14 +55,12 @@ createOutput :: MakeMonad ()
 createOutput =  mapM_ doTableCommand =<< askTable
 
 doTableCommand :: TableCommand -> MakeMonad () 
-doTableCommand (Latex l)    = tellLn $ l -- ++ "\\\\" 
+doTableCommand (Latex l)    = tellLn l 
 doTableCommand (Template t) = tellLn =<< return doSubstitution `ap` (lift . safeReadFile $ t) `ap` askSubstitutions
 doTableCommand (Data   or)  = tellLn =<< lift . hoistEither =<< return outputRow `ap` return or `ap` askEstimates `ap` askDesiredModels
 
 
 -- | Text utility functions
 tellLn s = tell $ s ++ "\n"
-
-
 
 -- chunk = chunkFromText . T.pack
