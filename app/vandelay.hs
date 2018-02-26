@@ -1,11 +1,11 @@
-import App.Vandelay.Cmd
-import App.Vandelay.Estimates
-import App.Vandelay.Template 
-import App.Vandelay.Core 
+import Vandelay.Cmd
+import Vandelay.Estimates
+import Vandelay.Template 
+import Vandelay.Core 
 
 import Options.Applicative -- Provided by optparse-applicative
 import Options.Applicative.Builder (readerError)
-import Rainbow
+import Rainbow hiding ((<>))
 import qualified Rainbow.Translate as RT
 
 import qualified Data.Text as T
@@ -61,8 +61,8 @@ parseSourceFileReferences = option (str >>= readSourceFileReferences) ( long "in
                             )
 
 readSourceFileReferences :: String -> ReadM SourceFileReferences
-readSourceFileReferences s | lowercase s `elem` ["f","full"]         = return FullPath
-                           | lowercase s `elem` ["a","abbreviated"]  = return Abbreviation
+readSourceFileReferences s | toLower s `elem` ["f","full"]         = return FullPath
+                           | toLower s `elem` ["a","abbreviated"]  = return Abbreviation
                            | otherwise                               = readerError $ unwords ["Source file referencing option", s, "not recognized. Use (F)ull or (A)bbreviated."]
 
 parseSortOptions = SortOptions
@@ -94,18 +94,16 @@ parseSortVars = switch ( long "no-sort-vars"
 run :: Command -> IO ()
 run cmd = do
 
-    -- Get an EitherT IO as the result
-    let resultEIO = case cmd of
-                      Init files out sort dfr -> initTemplate files out sort dfr
-                      Make files              -> makeTables   files
+  -- Get an EitherT IO as the result
+  let resultEIO = case cmd of
+                    Init files out sort dfr -> initTemplate files out sort dfr
+                    Make files              -> makeTables   files
 
     -- Capture the result of type Either String (String, Handle)
-    result <- runEitherT resultEIO
-
-    case result of 
-      Left err  -> RT.putChunkLn (Rainbow.chunk "Vandelay error:" & fore red)
-                >> putStrLn err
-      Right _   -> return () 
+  runExceptT resultEIO >>= \case
+    Left err  -> RT.putChunkLn (Rainbow.chunk (asText "Vandelay error:") & fore red)
+              >> putStrLn err
+    Right _   -> return () 
 
 
 
