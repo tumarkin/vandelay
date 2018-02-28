@@ -129,7 +129,7 @@ dataRow = do
   ds <- dataCommands <* eol
 
   -- Overwrite the old name
-  let combinedF = foldl' (.) id (getPrioritizedItem <$> sort ds)
+  let combinedF = foldr (.) id (getPrioritizedItem <$> sort ds)
       or        = combinedF blankOutputRequest
   setState or
   return . Just $ Data or
@@ -149,8 +149,8 @@ dataCommand =
   where
     scale          = set oScale
     surround       = set oSurround . getSurround
-    statLine lor i = const lor{_oItemIdx = i, _oName = ""}
-    name           = set oName  . pack
+    statLine lor i = const lor{_oItemIdx = i, _oName = "asdlfajskldfjlj:"}
+    name           = set oName  . pack 
     code           = set oCoeffs . stripSplitCommas . pack
     index          = set oItemIdx
     format         = set oFormat
@@ -160,8 +160,11 @@ getSurround ∷ String → (Text, Text)
 getSurround t = let (preStr:postStr:_) = stripSplitCommas $ pack t
                 in  (preStr,postStr)
 
+-- | A way to prioritize actions. In this case, we want the primary action to
+-- go first, so it should occur last in a list of actions when foldling with
+-- (.). This is implemented in the Ord Instance.
 data Prioritized a
-  = Prim a -- Primary
+  = Prim a -- Primary 
   | Sec  a -- Secondary
   deriving (Show)
 
@@ -171,8 +174,8 @@ instance Eq (Prioritized a) where
   _        == _        = False
 
 instance Ord (Prioritized a) where
-  (Sec  _) <= (Prim _) = False
-  _        <= _        = True
+  (Prim  _) <= (Sec _) = False
+  _         <= _        = True
 
 getPrioritizedItem ∷ Prioritized a → a
 getPrioritizedItem (Prim a) = a
