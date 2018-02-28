@@ -149,7 +149,7 @@ dataCommand =
   where
     scale          = set oScale
     surround       = set oSurround . getSurround
-    statLine lor i = const lor{_oItemIdx = i, _oName = "asdlfajskldfjlj:"}
+    statLine lor i = const lor{_oItemIdx = i, _oName = ""}
     name           = set oName  . pack 
     code           = set oCoeffs . stripSplitCommas . pack
     index          = set oItemIdx
