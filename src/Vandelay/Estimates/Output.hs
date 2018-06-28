@@ -118,5 +118,5 @@ validateUnique mn est =
     modelCounts = count . concatMap keys . toList $ est
 
     repeatedModels ∷ [ModelName]
-    repeatedModels = map fst . filter ((<=) 1 . snd) . listifyCounter $ modelCounts
+    repeatedModels = map fst . filter ((> 1) . snd) . listifyCounter $ modelCounts
 
