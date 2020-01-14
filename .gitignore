@@ -1,3 +1,4 @@
 .stack-work/
 vandelay.cabal
 *~
+.DS_Store

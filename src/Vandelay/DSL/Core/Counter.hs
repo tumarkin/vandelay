@@ -6,9 +6,7 @@
 -- A counter for ordered items, either individually or in a foldable.
 --
 -----------------------------------------------------------------------------
-
-
-module Vandelay.Shared.Counter
+module Vandelay.DSL.Core.Counter
   ( Counter(..)
   , emptyCounter
   , count
@@ -26,9 +24,11 @@ import           Data.Monoid ((<>))
 newtype Counter a = Counter { unCounter :: M.Map a Int }
   deriving (Show, Eq)
 
+instance Ord a => Semigroup (Counter a) where
+  ca <> cb = Counter $ M.unionWith (+) (unCounter ca) (unCounter cb)
+
 instance Ord a => Monoid (Counter a) where
   mempty        = emptyCounter
-  mappend ca cb = Counter $ M.unionWith (+) (unCounter ca) (unCounter cb)
 
 emptyCounter :: Counter a
 emptyCounter = Counter M.empty

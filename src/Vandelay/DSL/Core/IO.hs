@@ -32,10 +32,9 @@ unsafeWriteFile fo t = do
 
 safeReadFileWithError ∷ (MonadError ErrorMsg m, MonadIO m) ⇒  FilePath → Text → m Text
 safeReadFileWithError f e = do
-  undefined
-  -- exists <- liftIO . doesFileExist $ f
-  -- if exists then liftIO (readFileUtf8 f)
-  --           else throwError $ fileNotFoundMsg f e
+  exists <- liftIO . doesFileExist $ f
+  if exists then liftIO (readFileUtf8 f)
+            else throwError $ fileNotFoundMsg f e
 
 safeReadFile ∷ (MonadError ErrorMsg m, MonadIO m) ⇒ FilePath → m Text
 safeReadFile f = safeReadFileWithError f "File"

@@ -54,6 +54,7 @@ executables:
 default-extensions:    
 - FlexibleContexts
 - LambdaCase
+- MultiWayIf
 - NoImplicitPrelude
 - OverloadedStrings
 - RecordWildCards

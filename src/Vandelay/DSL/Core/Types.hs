@@ -1,3 +1,5 @@
+{-# LANGUAGE TemplateHaskell #-}
+
 module Vandelay.DSL.Core.Types
   (
 
@@ -60,12 +62,13 @@ type Significance = Int
 
 
 -- Data Item
+instance Semigroup DataItem where
+  a         <> BlankData = a
+  BlankData <> b         = b
+  a         <> b         = a
+
 instance Monoid DataItem where
   mempty  = BlankData
-
-  a         `mappend` BlankData = a
-  BlankData `mappend` b         = b
-  a         `mappend` b         = a
 
 
 
@@ -86,9 +89,8 @@ blankVandelayTemplate = VandelayTemplate
     , substitutions = []
     }
 
-instance Monoid VandelayTemplate where
-  mempty = blankVandelayTemplate
-  mappend a b = VandelayTemplate
+instance Semigroup VandelayTemplate where
+  a <> b = VandelayTemplate
       { desiredModels = desiredModels a <>  desiredModels b
       , texfile       = texfile a       <|> texfile b
       , estimatesHM   = estimatesHM a   <>  estimatesHM b
@@ -96,6 +98,8 @@ instance Monoid VandelayTemplate where
       , substitutions = substitutions a <>  substitutions b
       }
 
+instance Monoid VandelayTemplate where
+  mempty = blankVandelayTemplate
 
 -- Table Commands
 data TableCommand
