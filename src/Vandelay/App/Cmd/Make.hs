@@ -6,6 +6,7 @@ module Vandelay.App.Cmd.Make
 import           Control.Monad.Trans.RWS       hiding (ask, asks)
 import           Rainbow
 import qualified Rainbow.Translate             as RT
+import           System.FilePath
 
 import           Vandelay.App.Template.ParserT
 import           Vandelay.DSL.Core
@@ -13,23 +14,26 @@ import           Vandelay.DSL.Estimates
 
 
 
-makeTables ∷ [String]        -- ^ Vandelay template filepath globs
-           → EIO ErrorMsg () -- ^ Error message or ()
-makeTables gs = do
-  globs <- globPaths gs
-  mapM_ makeTable globs
+makeTables
+    ∷ FilePath        -- ^ Output directory
+    → [String]        -- ^ Vandelay template filepath globs
+    → EIO ErrorMsg () -- ^ Error message or ()
+makeTables dir gs =
+  mapM_ (makeTable dir) =<< globPaths gs
 
 -- | Create a LaTeX table from a Vandelay template
-makeTable ∷ String          -- ^ Vandelay template filepath
-          → EIO ErrorMsg () -- ^ Error message or ()
-makeTable templatePath = addFilepathIfError $ do
-  template  <- readTemplate templatePath
-  outFile   <- hoistEitherError . getTexfile $ template
-  (_,_,res) <- runMakeMonad createOutput template
+makeTable
+    ∷ FilePath        -- ^ Output directory
+    → String          -- ^ Vandelay template filepath
+    → EIO ErrorMsg () -- ^ Error message or ()
+makeTable dir templatePath = addFilepathIfError $ do
+    template  <- readTemplate templatePath
+    let outFile = dir </> takeFileName templatePath -<.> "tex"
+    (_,_,res) <- runMakeMonad createOutput template
 
-  liftIO . RT.putChunk $ Rainbow.chunk (asText "Success: ") & fore green
-  liftIO . putStrLn $ tTemplatePath
-  unsafeWriteFile (Just outFile) res
+    liftIO . RT.putChunk $ Rainbow.chunk (asText "Success: ") & fore green
+    liftIO . putStrLn $ tTemplatePath
+    unsafeWriteFile (Just outFile) res
 
   where
     addFilepathIfError = prependError ("In template: " ++ tTemplatePath ++ "\n")
