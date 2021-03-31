@@ -56,7 +56,6 @@ configLine     ∷ (MonadError ErrorMsg m, MonadIO m) ⇒  TemplateParser m Vand
 configCommand  ∷ (MonadError ErrorMsg m, MonadIO m) ⇒  TemplateParser m VandelayTemplate
 configDataFile ∷ (MonadError ErrorMsg m, MonadIO m) ⇒  TemplateParser m VandelayTemplate
 configModels   ∷ (MonadError ErrorMsg m, MonadIO m) ⇒  TemplateParser m VandelayTemplate
-configTexfile  ∷ (MonadError ErrorMsg m, MonadIO m) ⇒  TemplateParser m VandelayTemplate
 
 configSection = do
   _   <- string "configuration:" <* eol
@@ -70,8 +69,7 @@ configLine =
 configCommand =
       configDataFile
   <|> configModels
-  <|> configTexfile
-  <?> "Invalid configuration command. Valid commands are \"data:\", \"models:\", and \"tex:\"."
+  <?> "Invalid configuration command. Valid commands are \"data:\" and \"models:\"."
 
 
 configDataFile = do
@@ -90,12 +88,6 @@ extractFilePath t =
        | otherwise → (Just $ unpack pre, tail . impureNonNull $ post)
   where
     (pre, post) = T.breakOn ":" t
-
-configTexfile  = basicCommand
-                  "tex:"
-                  (\p → blankVandelayTemplate{texfile = Just p})
-
-
 
 
 

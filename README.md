@@ -25,22 +25,22 @@ A LaTeX table importer/exporter
 To do
 
 # Documentation
-Full detailed documentation is forthcoming. For now, please refer to the  example.
+Full detailed documentation is forthcoming. For now, please refer to the example.
 
 # Installation
-You may download a precompiled binary from the /bin directory or build from source.
-
-**Precompiled binary**
-
-A precompiled binary for Mac OS X Mavericks is currently the only one available. Download it from the /bin directory and place it in your user path. Please email me if this does not work as the binary may require additional library files.
-
-**From source**
 
 *vandelay* is written in Haskell. To compile from source, 
 
 * Install Stack: http://haskellstack.org
 * Clone this repository. 
 * Use the command `stack install` from the project root directory.
+
+# Version history
+
+* 0.1.1.0: All Vandelay templates are processed to a corresponding file with
+           the terminal extension changed to 'tex'. The output directory is
+           customizable from the command line. Removed destination tex file 
+           option from template as this was an unnecessary option.
 
 # To Do
 

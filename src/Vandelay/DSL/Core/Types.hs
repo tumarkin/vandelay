@@ -37,7 +37,6 @@ module Vandelay.DSL.Core.Types
   , TableCommand(..)
 
   , getDesiredModels
-  , getTexfile
   , getEstimatesHM
 
   ) where
@@ -76,14 +75,12 @@ instance Monoid DataItem where
 -- Vandalay Template
 data VandelayTemplate = VandelayTemplate
     { desiredModels ∷ [(Maybe FilePath, Text)] -- ^ (Maybe Path, Model Name)
-    , texfile       ∷ Maybe FilePath           -- ^ Output file path
     , estimatesHM   ∷ EstimatesHM
     , table         ∷ [TableCommand]
     , substitutions ∷ [(Text, Text)] } deriving (Show)
 
 blankVandelayTemplate = VandelayTemplate
     { desiredModels = []
-    , texfile       = Nothing
     , estimatesHM   = mempty
     , table         = []
     , substitutions = []
@@ -92,7 +89,6 @@ blankVandelayTemplate = VandelayTemplate
 instance Semigroup VandelayTemplate where
   a <> b = VandelayTemplate
       { desiredModels = desiredModels a <>  desiredModels b
-      , texfile       = texfile a       <|> texfile b
       , estimatesHM   = estimatesHM a   <>  estimatesHM b
       , table         = table a         <>  table b
       , substitutions = substitutions a <>  substitutions b
@@ -112,15 +108,11 @@ data TableCommand
 
 -- Safe Accessors
 getDesiredModels ∷ VandelayTemplate → Either Text [(Maybe FilePath, Text)]
-getTexfile       ∷ VandelayTemplate → Either Text FilePath
 getEstimatesHM   ∷ VandelayTemplate → Either Text EstimatesHM
 
 getDesiredModels vt
     | null . desiredModels $ vt = Left  "Models not specified"
     | otherwise                 = Right $ desiredModels vt
-
-getTexfile =
-    maybe (Left "Output tex file not specified") Right . texfile
 
 getEstimatesHM vt
     | null . estimatesHM $ vt = Left "Estimate file not specified"

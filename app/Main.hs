@@ -12,17 +12,46 @@ import           Vandelay.DSL.Estimates
 
 
 
+--------------------------------------------------------------------------------
+-- Program                                                                    --
+--------------------------------------------------------------------------------
+
+main ∷ IO ()
+main = 
+  run =<< execParser
+        (parseCommand `withInfo` "Generate LaTeX tables")
+  
+run ∷ Command → IO ()
+run cmd = do
+
+  -- Get an EitherT IO as the result
+  let resultEIO = case cmd of
+                    Init files out sort dfr -> initTemplate files out sort dfr
+                    Make files outputPath   -> makeTables   outputPath files
+
+    -- Capture the result of type Either String (String, Handle)
+  runExceptT resultEIO >>= \case
+    Left err  -> RT.putChunkLn (Rainbow.chunk (asText "Vandelay error:") & fore red)
+              >> putStrLn err
+    Right _   -> return ()
+
+
+--------------------------------------------------------------------------------
+-- Commands                                                                   --
+--------------------------------------------------------------------------------
 data Command
     = Init [File] Output SortOptions SourceFileReferences
-    | Make [File]
+    | Make [File] OutputPath
     deriving (Show)
 
 type File       = String
 type Output     = Maybe String
+type OutputPath = String
 
 
-
-
+--------------------------------------------------------------------------------
+-- Option parsing                                                             --
+--------------------------------------------------------------------------------
 withInfo ∷ Parser a → String → ParserInfo a
 withInfo opts desc = info (helper <*> opts) $ progDesc desc
 
@@ -41,7 +70,18 @@ parseInit = Init
     <*> parseSourceFileReferences
 
 parseMake ∷ Parser Command
-parseMake = Make <$> some (argument str (metavar "VANDELAY-TEMPLATE(S)"))
+parseMake = Make
+    <$> some (argument str (metavar "VANDELAY-TEMPLATE(S)"))
+    <*> outputPath
+  where
+    outputPath = strOption ( long "output-path"
+                           <> short 'o'
+                           <> metavar "PATH"
+                           <> help "Destination for the processed templates"
+                           <> value "."
+                           )
+        
+     
 
 
 -- Initialization options
@@ -76,7 +116,7 @@ parseSortModels = switch ( long "no-sort-models"
                        <> hidden
                        <> help "Sort models by order of appearance instead of alphabetically."
                        )
-
+ 
 
 parseSortVars ∷ Parser Bool
 parseSortVars = switch ( long "no-sort-vars"
@@ -89,29 +129,5 @@ parseSortVars = switch ( long "no-sort-vars"
 
 
 
-
-
--- Actual program logic
-run ∷ Command → IO ()
-run cmd = do
-
-  -- Get an EitherT IO as the result
-  let resultEIO = case cmd of
-                    Init files out sort dfr -> initTemplate files out sort dfr
-                    Make files              -> makeTables   files
-
-    -- Capture the result of type Either String (String, Handle)
-  runExceptT resultEIO >>= \case
-    Left err  -> RT.putChunkLn (Rainbow.chunk (asText "Vandelay error:") & fore red)
-              >> putStrLn err
-    Right _   -> return ()
-
-
-
-main ∷ IO ()
-main = do
-  run =<< execParser
-        (parseCommand `withInfo` "Generate LaTeX tables")
-  return ()
 
 
