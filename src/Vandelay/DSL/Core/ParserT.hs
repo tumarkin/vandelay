@@ -4,17 +4,13 @@
 module Vandelay.DSL.Core.ParserT
   ( int
   , unsignedInt
-
   , double
-
   , boolP
-
   , eol
   ) where
 
-import           ClassyPrelude       hiding (try)
-import           Control.Applicative
-import           Text.Parsec         hiding (many, optional, (<|>))
+import           RIO         hiding (try)
+import           Text.Parsec hiding (many, optional, (<|>))
 
 
 -- Integers
@@ -37,7 +33,7 @@ boolP =  try (string "true" >> pure True)
 unsignedInt ∷ Stream s m Char ⇒ ParsecT s u m Int
 unsignedInt =
   hoistMaybe "Error parsing integer" $
-    readMay <$> many1 digit
+    readMaybe <$> many1 digit
 
 -- Doubles
 double ∷ Stream s m Char ⇒ ParsecT s u m Double
@@ -63,7 +59,7 @@ unsignedNumber =
   <|> try (read3 <$> many1 digit <*> return ""  <*> return ""  )
     where
   read3 ∷ String → String → String → Maybe Double
-  read3 a b c = readMay (a++b++c)
+  read3 a b c = readMaybe (a++b++c)
 
 
 hoistMaybe ∷ String → ParsecT s u m (Maybe a) → ParsecT s u m a

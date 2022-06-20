@@ -1,41 +1,35 @@
-import qualified Data.Text                     as T
+{-# LANGUAGE ViewPatterns #-}
+import qualified Data.Text                   as T
 import           Options.Applicative
-import           Options.Applicative.Builder   (readerError)
-import           Rainbow                       hiding ((<>))
-import qualified Rainbow.Translate             as RT
-
+import           Options.Applicative.Builder (readerError)
+import           Rainbow                     hiding ((<>))
+import qualified Rainbow.Translate           as RT
 import           Vandelay.App.Cmd.Init
 import           Vandelay.App.Cmd.Make
-import           Vandelay.App.Template.ParserT
 import           Vandelay.DSL.Core
 import           Vandelay.DSL.Estimates
-
-
+import RIO.Directory
 
 --------------------------------------------------------------------------------
 -- Program                                                                    --
 --------------------------------------------------------------------------------
 
 main ∷ IO ()
-main = 
-  run =<< execParser
-        (parseCommand `withInfo` "Generate LaTeX tables")
-  
-run ∷ Command → IO ()
-run cmd = do
+main = printError =<< run =<< execParser (parseCommand `withInfo` "Generate LaTeX tables")
 
-  -- Get an EitherT IO as the result
-  let resultEIO = case cmd of
-                    Init files out sort dfr -> initTemplate files out sort dfr
-                    Make files outputPath   -> makeTables   outputPath files
+run ∷ Command → IO (Either Text ())
+run cmd = 
+  runSimpleApp . runExceptT $
+      case cmd of
+        Init files out sort dfr -> initTemplate files out sort dfr
+        Make files outputPath   -> makeTables   outputPath files
 
-    -- Capture the result of type Either String (String, Handle)
-  runExceptT resultEIO >>= \case
-    Left err  -> RT.putChunkLn (Rainbow.chunk (asText "Vandelay error:") & fore red)
-              >> putStrLn err
-    Right _   -> return ()
+      -- liftIO $ printError resultEIO
 
-
+ 
+printError (Right _)  = pure ()
+printError (Left err) = RT.putChunkLn (Rainbow.chunk ("Vandelay error:") & fore red)
+                        >> RT.putChunkLn (Rainbow.chunk (err))
 --------------------------------------------------------------------------------
 -- Commands                                                                   --
 --------------------------------------------------------------------------------
@@ -80,8 +74,8 @@ parseMake = Make
                            <> help "Destination for the processed templates"
                            <> value "."
                            )
-        
-     
+
+
 
 
 -- Initialization options
@@ -102,9 +96,10 @@ parseSourceFileReferences = option (str >>= readSourceFileReferences) ( long "in
                             )
 
 readSourceFileReferences ∷ String → ReadM SourceFileReferences
-readSourceFileReferences s | toLower s `elem` ["f","full"]         = return FullPath
-                           | toLower s `elem` ["a","abbreviated"]  = return Abbreviation
-                           | otherwise                               = readerError $ unwords ["Source file referencing option", s, "not recognized. Use (F)ull or (A)bbreviated."]
+readSourceFileReferences (T.toLower . T.pack -> s)
+    | s `elem` ["f","full"]         = return FullPath
+    | s `elem` ["a","abbreviated"]  = return Abbreviation
+    | otherwise                     = readerError $ unwords ["Source file referencing option", T.unpack s, "not recognized. Use (F)ull or (A)bbreviated."]
 
 parseSortOptions = SortOptions
     <$> parseSortModels
@@ -116,7 +111,7 @@ parseSortModels = switch ( long "no-sort-models"
                        <> hidden
                        <> help "Sort models by order of appearance instead of alphabetically."
                        )
- 
+
 
 parseSortVars ∷ Parser Bool
 parseSortVars = switch ( long "no-sort-vars"

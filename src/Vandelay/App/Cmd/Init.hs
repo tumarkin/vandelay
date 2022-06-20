@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedStrings #-}
 module Vandelay.App.Cmd.Init
   ( initTemplate
   , SortOptions(..)
@@ -5,20 +6,19 @@ module Vandelay.App.Cmd.Init
   ) where
 
 import           Control.Monad.Trans.RWS (RWST, runRWST, tell)
-import           System.FilePath
+import           Data.NonNull
+import           RIO.FilePath
+import qualified RIO.List                as L
+import qualified RIO.Map                 as M
+import qualified RIO.Text                as T
 import           Vandelay.DSL.Core
 
-import qualified Data.Map                as M
-
-
-
-
 -- Initialize template
-initTemplate ∷ [FilePath]           -- ^ Estimation results filepaths
-             → Maybe FilePath       -- ^ Optional output file (stdout if nothing)
+initTemplate ∷ [FilePath]                         -- ^ Estimation results filepaths
+             → Maybe FilePath                     -- ^ Optional output file (stdout if nothing)
              → SortOptions
-             → SourceFileReferences -- ^ Use abbreviated model names
-             → EIO ErrorMsg ()      -- ^ Error message or ()
+             → SourceFileReferences               -- ^ Use abbreviated model names
+             → ExceptT ErrorMsg (RIO env) ()      -- ^ Error message or ()
 initTemplate estPaths textOutFile sos sfr = do
   globs      <- globPaths estPaths
   estFile    <- mapM safeReadFile globs
@@ -28,7 +28,7 @@ initTemplate estPaths textOutFile sos sfr = do
 
 
 -- -- | Internal data types
-type InitMonad   = RWST InitSetup Text () (EIO ErrorMsg)
+type InitMonad env = RWST InitSetup Text () (ExceptT ErrorMsg (RIO env))
 data InitSetup   = InitSetup
   { dataFilePaths        ∷ [FilePath]
   , dataFileContents     ∷ [FileContent]
@@ -55,7 +55,7 @@ data SourceFileReferences =
 
 
 -- | Write the template's configuration section
-writeConf ∷ InitMonad ()
+writeConf ∷ InitMonad env ()
 writeConf = do
   dfp <- askPath
   baseFile <- maybe (throwError "No file paths specified")
@@ -67,7 +67,7 @@ writeConf = do
   tellLn   "configuration:"
   writeDataFiles
   tellLn   "  models: # List models separated by columns as (FILENAME:)MODELNAME where FILENAME is optional"
-  tellLn $ "  tex:    " ++ pack texFile
+  tellLn $ "  tex:    " <> T.pack texFile
   tellLn ""
   tellLn "  # Models are:"
   writeModels
@@ -75,7 +75,7 @@ writeConf = do
 
 
 -- | Write the template's table section
-writeTable ∷ InitMonad ()
+writeTable ∷ InitMonad env ()
 writeTable = do
   tellLn "table:"
   tellLn "  template: header.tex # Subject to substitutions"
@@ -89,7 +89,7 @@ writeTable = do
   tellLn ""
 
 -- | Write the template's substitution section
-writeSub ∷ InitMonad ()
+writeSub ∷ InitMonad env ()
 writeSub = do
   tellLn "substitutions:"
   tellLn "  CAPTION: Insert caption text which may"
@@ -100,36 +100,36 @@ writeSub = do
 
 
 -- | Write the datafiles
-writeDataFiles ∷ InitMonad ()
+writeDataFiles ∷ InitMonad env ()
 writeDataFiles = do
-  paths <- map pack <$> askPath
+  paths <- map T.pack <$> askPath
   refs  <- askFileReferences
   sfr   <- asks sourceFileReferences
 
   if sfr /= Abbreviation
-  then tellLn . indent . dataStatement . intercalate  ", " . map pack =<< askPath
+  then tellLn . indent . dataStatement . T.intercalate  ", " . map T.pack =<< askPath
   else let out   = map (indent . dataStatement *** refStatement) $ zip paths refs
        in  mapM_ tellLnWithDataSource =<< lengthenItemRefTuple out
 
 
 
 -- | Write the models and variables
-writeModels ∷ InitMonad ()
-writeVars   ∷ InitMonad ()
+writeModels ∷ InitMonad env ()
+writeVars   ∷ InitMonad env ()
 
 writeModels = writeItem askSortModels modelReferenceTuple
 writeVars   = writeItem askSortVars   varReferenceTuple
 
 
-writeItem ∷ InitMonad Bool                   -- | Sorting asker
+writeItem ∷ InitMonad env Bool               -- | Sorting asker
           → (Text → Text → [(Text, [Text])]) -- | Item-reference tupling function
-          → InitMonad ()
+          → InitMonad env ()
 writeItem askSort tupler = do
   conrefs  <- askContentsRefs -- [(Content, Source File Reference)]
   sortQ    <- askSort
 
   let sorter ∷ Ord a ⇒ [a] → [a]
-      sorter = if sortQ then id else sort
+      sorter = if sortQ then id else L.sort
       its    = concatMap (uncurry tupler) conrefs                     -- [(Item, Source File Reference)]
       is     = sorter . M.toList . M.fromListWith (++) $ reverse its  -- [(Item, [Source File Reference])] -- Group by item
       out    = map (indentAndComment *** dataSourceStatement) is    -- Format each part of tuple using arrows
@@ -142,21 +142,23 @@ writeItem askSort tupler = do
 -- | Model and variable from content
 modelsFromContent ∷ Text   -- | Content
                   → [Text] -- | Model
-modelsFromContent t =
-  maybe [] (stripFilter . splitOn tab . head) (fromNullable . lines $ t)
+modelsFromContent t = 
+  maybe []
+        (stripFilter . splitOn tab . head)
+        (fromNullable . T.lines $ t)
 
 
 varsFromContent ∷ Text   -- | Content
                 → [Text] -- | [(Variable, Ref)]
-varsFromContent =
-  stripFilter . mapMaybe (fmap head . fromNullable . splitOn tab) . lines
+varsFromContent = 
+  stripFilter . mapMaybe (fmap head . fromNullable . splitOn tab) . T.lines
 
 
 itemReferenceTuple ∷ (Text → [Text]) -- | Item Extraction function
                    → Text -- | Content
                    → Text -- | Refs
                    → [(Text, [Text])] -- | [(Item, [Ref])]
-itemReferenceTuple f c r = zip (f c) $ repeat [r]
+itemReferenceTuple f c r = zip (f c) $ L.repeat [r]
 
 
 varReferenceTuple   = itemReferenceTuple varsFromContent
@@ -164,18 +166,18 @@ modelReferenceTuple = itemReferenceTuple modelsFromContent
 
 -- | Reader ask utility functions
 
-askPath                 ∷ InitMonad [FilePath]
-askTPath                ∷ InitMonad [FilePath]
-askContents             ∷ InitMonad [FileContent]
-askContentsRefs         ∷ InitMonad [(FileContent, FileRefs)]
-askSortOptions          ∷ InitMonad SortOptions
-askSortModels           ∷ InitMonad Bool
-askSortVars             ∷ InitMonad Bool
-askSourceFileReferences ∷ InitMonad SourceFileReferences
-askFileReferences       ∷ InitMonad [FileRefs]
+askPath                 ∷ InitMonad env [FilePath]
+askTPath                ∷ InitMonad env [Text]
+askContents             ∷ InitMonad env [FileContent]
+askContentsRefs         ∷ InitMonad env [(FileContent, FileRefs)]
+askSortOptions          ∷ InitMonad env SortOptions
+askSortModels           ∷ InitMonad env Bool
+askSortVars             ∷ InitMonad env Bool
+askSourceFileReferences ∷ InitMonad env SourceFileReferences
+askFileReferences       ∷ InitMonad env [FileRefs]
 
 askPath                 = asks dataFilePaths
-askTPath                = map pack <$> askPath
+askTPath                = map T.pack <$> askPath
 askContents             = asks dataFileContents
 askContentsRefs         = zip <$> askContents <*> askFileReferences
 askSortOptions          = asks sortOptions
@@ -185,7 +187,7 @@ askSourceFileReferences = asks sourceFileReferences
 askFileReferences =
   askSourceFileReferences >>= \case
     Abbreviation → return abbreviations
-    _            → map pack <$> asks dataFilePaths
+    _            → map T.pack <$> asks dataFilePaths
 
 
 
@@ -196,45 +198,46 @@ askFileReferences =
 
 
 -- | WriterT utility functions
-tellLn s = tell $ s ++ "\n"
-tellLnWithDataSource (s,ds) =
+tellLn s = tell $ s <> "\n"
+tellLnWithDataSource (s,ds) = 
   askSourceFileReferences >>= \case
     NoSFR → tellLn s
-    _     → tellLn (s ++ ds)
+    _     → tellLn (s <> ds)
 
 
 -- | Statement creation
 dataStatement ∷ Text → Text
-dataStatement = (++) "data: "
+dataStatement = (<>) "data: "
 
 dataSourceStatement ∷ [Text] → Text
-dataSourceStatement rs = unwords [" # In", unwordEnglishList rs]
+dataSourceStatement rs = T.unwords [" # In", unwordEnglishList rs]
 
 refStatement ∷ Text → Text
-refStatement s = unwords [" #", s]
+refStatement s = T.unwords [" #", s]
 
 
 -- | Text utility functions
 stripFilter∷ [Text] → [Text] -- | Remove spaces, drop blanks
-stripFilter = filter (not . null) . map strip
+stripFilter = filter (not . T.null) . map T.strip
 
+tab :: Text
 tab = "\t"
 
 indent∷ Text → Text
-indent = (++) "  "
+indent = (<>) "  "
 
 indentAndComment ∷ Text → Text
-indentAndComment = indent . (++) "# "
+indentAndComment = indent . (<>) "# "
 
 abbreviations ∷ [Text]
-abbreviations = map (\c → "(" <> singleton c <> ")") ['A'..'Z']
+abbreviations = map (\c → "(" <> T.singleton c <> ")") ['A'..'Z']
 
 extendText ∷ Int → Text → Text
-extendText i s | length s > i = s
-               | otherwise    = s ++ replicate (i - length s) ' '
+extendText i s | T.length s > i = s
+               | otherwise    = s <> T.replicate (i - T.length s) (T.singleton ' ')
 
 lengthenItemRefTuple ∷ [(Text, Text)]
-                     → InitMonad [(Text,Text)]
+                     → InitMonad env [(Text,Text)]
 lengthenItemRefTuple ts =
   asks sourceFileReferences >>= \case
     NoSFR → return ts
@@ -243,6 +246,6 @@ lengthenItemRefTuple ts =
 
                 getLength ∷ (Text, Text) → Int
   -- , unwordEnglishListString
-                getLength (t, _) = length t
+                getLength (t, _) = T.length t
             in  return $ map (first (extendText maxlength)) ts
 
