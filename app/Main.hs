@@ -1,14 +1,12 @@
 {-# LANGUAGE ViewPatterns #-}
 import qualified Data.Text                   as T
 import           Options.Applicative
-import           Options.Applicative.Builder (readerError)
 import           Rainbow                     hiding ((<>))
 import qualified Rainbow.Translate           as RT
 import           Vandelay.App.Cmd.Init
 import           Vandelay.App.Cmd.Make
+import           Vandelay.App.Cmd.Dhall
 import           Vandelay.DSL.Core
-import           Vandelay.DSL.Estimates
-import RIO.Directory
 
 --------------------------------------------------------------------------------
 -- Program                                                                    --
@@ -18,15 +16,16 @@ main ∷ IO ()
 main = printError =<< run =<< execParser (parseCommand `withInfo` "Generate LaTeX tables")
 
 run ∷ Command → IO (Either Text ())
-run cmd = 
+run cmd =
   runSimpleApp . runExceptT $
       case cmd of
         Init files out sort dfr -> initTemplate files out sort dfr
         Make files outputPath   -> makeTables   outputPath files
+        Dhall      outputPath   -> lift $ installLibrary outputPath
 
       -- liftIO $ printError resultEIO
 
- 
+
 printError (Right _)  = pure ()
 printError (Left err) = RT.putChunkLn (Rainbow.chunk ("Vandelay error:") & fore red)
                         >> RT.putChunkLn (Rainbow.chunk (err))
@@ -36,6 +35,7 @@ printError (Left err) = RT.putChunkLn (Rainbow.chunk ("Vandelay error:") & fore 
 data Command
     = Init [File] Output SortOptions SourceFileReferences
     | Make [File] OutputPath
+    | Dhall OutputPath
     deriving (Show)
 
 type File       = String
@@ -51,8 +51,9 @@ withInfo opts desc = info (helper <*> opts) $ progDesc desc
 
 parseCommand ∷ Parser Command
 parseCommand = subparser $
-    command "init" (parseInit `withInfo` "Create a blank template from a tab-separated results file(s)") <>
-    command "make" (parseMake `withInfo` "Generate LaTeX from a template file(s)")
+    command "init"  (parseInit  `withInfo` "Create a blank template from a tab-separated results file(s)") <>
+    command "make"  (parseMake  `withInfo` "Generate LaTeX from a template file(s)") <>
+    command "dhall" (parseDhall `withInfo` "Install DHALL library")
 
 
 
@@ -74,6 +75,10 @@ parseMake = Make
                            <> help "Destination for the processed templates"
                            <> value "."
                            )
+
+parseDhall ∷ Parser Command
+parseDhall = Dhall
+    <$> argument str (metavar "DHALL-LIBRARY-PATH")
 
 
 

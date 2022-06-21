@@ -22,14 +22,10 @@ description:         Please see the README on GitHub at <https://github.com/gith
 dependencies:
 - base >= 4.7 && < 5
 - Glob 
-# - classy-prelude
-# - containers
-# - directory
-# - filepath
-# - lens-simple
 - data-default-class
 - dhall
 - either
+- file-embed
 - microlens-th
 - mono-traversable
 - mtl
@@ -42,7 +38,6 @@ dependencies:
 - transformers
 - text
     
-
 library:
   source-dirs: src
 
