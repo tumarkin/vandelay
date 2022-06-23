@@ -1,5 +1,5 @@
 name:                vandelay
-version:             0.1.1.0
+version:             0.1.2.0
 github:              "tumarkin/vandelay"
 license:             BSD3
 author:              "Author name here"
@@ -22,21 +22,23 @@ description:         Please see the README on GitHub at <https://github.com/gith
 dependencies:
 - base >= 4.7 && < 5
 - Glob 
-- classy-prelude
-- containers
-- directory
+- data-default-class
+- dhall
 - either
-- filepath
-- lens-simple
+- file-embed
+- microlens-th
+- mono-traversable
 - mtl
 - optparse-applicative 
 - parsec
 - parsec-numbers
-- rainbow 
+- rainbow
+- rio
 - split
-- text 
+- string-interpolate
 - transformers
-
+- text
+    
 library:
   source-dirs: src
 
@@ -58,4 +60,6 @@ default-extensions:
 - NoImplicitPrelude
 - OverloadedStrings
 - RecordWildCards
+- TupleSections
 - UnicodeSyntax
+- ViewPatterns

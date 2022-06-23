@@ -1,248 +1,177 @@
+{-# LANGUAGE QuasiQuotes   #-}
 module Vandelay.App.Cmd.Init
   ( initTemplate
-  , SortOptions(..)
-  , SourceFileReferences(..)
   ) where
 
-import           Control.Monad.Trans.RWS (RWST, runRWST, tell)
-import           System.FilePath
+import           Data.NonNull
+import           Data.String.Interpolate (i)
+import           RIO.FilePath
+import qualified RIO.Set                 as Set
+import qualified RIO.Text                as T
 import           Vandelay.DSL.Core
 
-import qualified Data.Map                as M
-
-
-
-
 -- Initialize template
-initTemplate ∷ [FilePath]           -- ^ Estimation results filepaths
-             → Maybe FilePath       -- ^ Optional output file (stdout if nothing)
-             → SortOptions
-             → SourceFileReferences -- ^ Use abbreviated model names
-             → EIO ErrorMsg ()      -- ^ Error message or ()
-initTemplate estPaths textOutFile sos sfr = do
-  globs      <- globPaths estPaths
-  estFile    <- mapM safeReadFile globs
-  (_,_,text) <- runRWST (writeConf >> writeTable >> writeSub ) (InitSetup estPaths estFile sos sfr) ()
+initTemplate ∷ [FilePath]                         -- ^ Estimation results filepaths
+             → Maybe FilePath                     -- ^ Optional output file (stdout if nothing)
+             -- → SortOptions
+             → ExceptT ErrorMsg (RIO env) ()      -- ^ Error message or ()
+initTemplate estGlobs textOutFile = do
+  globs      <- globPaths estGlobs
 
-  unsafeWriteFile textOutFile text
-
-
--- -- | Internal data types
-type InitMonad   = RWST InitSetup Text () (EIO ErrorMsg)
-data InitSetup   = InitSetup
-  { dataFilePaths        ∷ [FilePath]
-  , dataFileContents     ∷ [FileContent]
-  , sortOptions          ∷ SortOptions
-  , sourceFileReferences ∷ SourceFileReferences
-  }
-
-type FileContent = Text
-type FileRefs    = Text
-
-data SortOptions = SortOptions
-    { -- | Output models in order of appearance in estimates file if false
-      sortModels ∷ Bool
-      -- | Output variables in order of appearance in estimates file  if false
-    , sortVars   ∷ Bool
-    }
-    deriving (Show)
-
-data SourceFileReferences =
-    NoSFR
-  | FullPath
-  | Abbreviation
-  deriving (Show, Read, Eq)
+  -- Files and contents [(FilePath, Text)]
+  estFilePathContents <- mapM (\fp -> (fp,) <$> safeReadFile fp) globs
+  unsafeWriteFile textOutFile (template estFilePathContents)
 
 
--- | Write the template's configuration section
-writeConf ∷ InitMonad ()
-writeConf = do
-  dfp <- askPath
-  baseFile <- maybe (throwError "No file paths specified")
-                    (return . takeFileName . head)
-                    (fromNullable dfp)
+template
+    ∷ [(FilePath, Text)] -- ^ File paths
+    → Text
+template ests = [i|
+----------------------------------------------------------------------------------------------------
+-- Import library                                                                                 --
+----------------------------------------------------------------------------------------------------
+let vl = ./vandelay/module.dhall
 
-  let   texFile  = replaceExtension baseFile ".tex"
+let row              = vl.command.row
+let latex            = vl.command.latex
+let latex_columns_ln = vl.command.latex_columns_ln
 
-  tellLn   "configuration:"
-  writeDataFiles
-  tellLn   "  models: # List models separated by columns as (FILENAME:)MODELNAME where FILENAME is optional"
-  tellLn $ "  tex:    " ++ pack texFile
-  tellLn ""
-  tellLn "  # Models are:"
-  writeModels
-  tellLn ""
+----------------------------------------------------------------------------------------------------
+-- Model configuration                                                                            --
+----------------------------------------------------------------------------------------------------
+#{filesText}
 
+let Model = { file: Text, column: Text }
 
--- | Write the template's table section
-writeTable ∷ InitMonad ()
-writeTable = do
-  tellLn "table:"
-  tellLn "  template: header.tex # Subject to substitutions"
-  tellLn "  name: Print Name; code: coded_name; index: 0; surround: (,); format: %03.2f; scale: 1.0; empty: -; zeroReformat: BOOL"
-  tellLn "  latex: \\addlinespace # Source latex code - add end lines if required"
-  tellLn ""
-  tellLn "  # Note that specifying missing in the data row (beginning with name) will allow for a file to omit a variable. This differs from blank values in a file with a variable."
-  tellLn ""
-  tellLn "  # Variables are:"
-  writeVars
-  tellLn ""
-
--- | Write the template's substitution section
-writeSub ∷ InitMonad ()
-writeSub = do
-  tellLn "substitutions:"
-  tellLn "  CAPTION: Insert caption text which may"
-  tellLn "           extends onto another line."
+let models =
+    [ #{modelText}
+    ]
 
 
+----------------------------------------------------------------------------------------------------
+-- Substitutions                                                                                  --
+----------------------------------------------------------------------------------------------------
+let caption     =  "TITLE"
+let label       =  "tbl:label"
+let font_size   =  "small"
+let header_size =  "small"
+let header_text = ''
+    The table reports results for fixed effects models examining
+    the relations ...
+    %
+    Standard errors are ...
+    %
+    \\textit{t}-statistics are reported in parentheses.
+    %
+    Coefficients marked with ***, **, and * are significant at
+    the 1\\%, 5\\% and 10\\% level, respectively.
+    ''
+
+let table_header = ''
+    \\midrule
+    ''
+
+----------------------------------------------------------------------------------------------------
+-- Table                                                                                          --
+----------------------------------------------------------------------------------------------------
+-- Configuration
+let number_of_models = List/length Model models
+let column_specification = vl.column_spec 32.0 number_of_models 19.9
+
+let header_config = {caption, column_specification, font_size, header_size, header_text, label, table_header}
+let pb_config     = {column_specification, font_size, number_of_models, table_header}
+
+-- Custom Functions
+let base_format     = { index = 0, format = "%03.2f", scale = 1.0, empty = None Text }
+let tstat_format    = base_format with index = 1
+let line_space      = latex "\\addlinespace[1pt]"
+
+let coefficient_and_tstat = \\(cname: Text) -> \\(tname: Text) -> \\(code : List Text) ->
+   [ row base_format cname code
+   , row tstat_format tname code
+   , line_space
+   ]
+
+let section_describe = \\(desc : Text) ->
+    [ line_space
+    , latex ("\\textit{" ++ desc ++ ":}\\\\")
+    ]
+
+-- Table specification
+let fixed_effects_clustering =
+    [ latex_columns_ln ["FE"]
+    , latex_columns_ln ["Clustering"]
+    ]
+
+#{variableText}
+
+let table =
+    vl.header header_config
+    \# section_descripte "CONTROL HEADER"
+    \# coefficient_and_tstat "VARIABLE NAME"        "T-STAT NAME"             ["CODE-1", "CODE-2"]
+    \# vl.page_break pb_config
+    \# [line_space]
+    \# fixed_effects_clustering
+    \# vl.footer
+
+in { models
+   , table
+   }
+|]
+
+  where
+    filesText ∷ Text
+    filesText = T.unlines $ map (\(fp, abbrev, _) -> abbrev <> " = " <> quote fp) fpAbbrevModels
 
 
+    fpAbbrevModels ∷ [(Text, Text, [Text])]
+    fpAbbrevModels = zipWith fpAbbrevModel ests ['a'..]
 
--- | Write the datafiles
-writeDataFiles ∷ InitMonad ()
-writeDataFiles = do
-  paths <- map pack <$> askPath
-  refs  <- askFileReferences
-  sfr   <- asks sourceFileReferences
+    fpAbbrevModel ∷ (FilePath, Text) → Char → (Text, Text, [Text])
+    fpAbbrevModel (fp, content) fileCode = (T.pack fp, fileAbbrev fileCode, modelsFromContent content)
 
-  if sfr /= Abbreviation
-  then tellLn . indent . dataStatement . intercalate  ", " . map pack =<< askPath
-  else let out   = map (indent . dataStatement *** refStatement) $ zip paths refs
-       in  mapM_ tellLnWithDataSource =<< lengthenItemRefTuple out
+    fileAbbrev c = "est_" <> T.singleton c
 
 
+    modelText ∷ Text
+    modelText = T.intercalate "\n    , " $ concatMap makeModels fpAbbrevModels
+      where
+        makeModels (_, abbrev, models) =
+            map (\m -> "(" <> abbrev <> ", " <> quote m <> ")") models
 
--- | Write the models and variables
-writeModels ∷ InitMonad ()
-writeVars   ∷ InitMonad ()
+    quote t = "\"" <> t <> "\""
 
-writeModels = writeItem askSortModels modelReferenceTuple
-writeVars   = writeItem askSortVars   varReferenceTuple
+    variableText ∷ Text
+    variableText = T.unlines . Set.toAscList . Set.fromList . fmap indentAndComment $ concatMap (varsFromContent . snd) ests
 
-
-writeItem ∷ InitMonad Bool                   -- | Sorting asker
-          → (Text → Text → [(Text, [Text])]) -- | Item-reference tupling function
-          → InitMonad ()
-writeItem askSort tupler = do
-  conrefs  <- askContentsRefs -- [(Content, Source File Reference)]
-  sortQ    <- askSort
-
-  let sorter ∷ Ord a ⇒ [a] → [a]
-      sorter = if sortQ then id else sort
-      its    = concatMap (uncurry tupler) conrefs                     -- [(Item, Source File Reference)]
-      is     = sorter . M.toList . M.fromListWith (++) $ reverse its  -- [(Item, [Source File Reference])] -- Group by item
-      out    = map (indentAndComment *** dataSourceStatement) is    -- Format each part of tuple using arrows
-  mapM_ tellLnWithDataSource =<< lengthenItemRefTuple out
-
-
-
-
+----------------------------------------------------------------------------------------------------
+-- Utility functions                                                                              --
+----------------------------------------------------------------------------------------------------
 
 -- | Model and variable from content
 modelsFromContent ∷ Text   -- | Content
                   → [Text] -- | Model
 modelsFromContent t =
-  maybe [] (stripFilter . splitOn tab . head) (fromNullable . lines $ t)
+  maybe []
+        (stripFilter . splitOn tab . head)
+        (fromNullable . T.lines $ t)
 
 
 varsFromContent ∷ Text   -- | Content
                 → [Text] -- | [(Variable, Ref)]
 varsFromContent =
-  stripFilter . mapMaybe (fmap head . fromNullable . splitOn tab) . lines
-
-
-itemReferenceTuple ∷ (Text → [Text]) -- | Item Extraction function
-                   → Text -- | Content
-                   → Text -- | Refs
-                   → [(Text, [Text])] -- | [(Item, [Ref])]
-itemReferenceTuple f c r = zip (f c) $ repeat [r]
-
-
-varReferenceTuple   = itemReferenceTuple varsFromContent
-modelReferenceTuple = itemReferenceTuple modelsFromContent
-
--- | Reader ask utility functions
-
-askPath                 ∷ InitMonad [FilePath]
-askTPath                ∷ InitMonad [FilePath]
-askContents             ∷ InitMonad [FileContent]
-askContentsRefs         ∷ InitMonad [(FileContent, FileRefs)]
-askSortOptions          ∷ InitMonad SortOptions
-askSortModels           ∷ InitMonad Bool
-askSortVars             ∷ InitMonad Bool
-askSourceFileReferences ∷ InitMonad SourceFileReferences
-askFileReferences       ∷ InitMonad [FileRefs]
-
-askPath                 = asks dataFilePaths
-askTPath                = map pack <$> askPath
-askContents             = asks dataFileContents
-askContentsRefs         = zip <$> askContents <*> askFileReferences
-askSortOptions          = asks sortOptions
-askSortModels           = sortModels <$> askSortOptions
-askSortVars             = sortVars   <$> askSortOptions
-askSourceFileReferences = asks sourceFileReferences
-askFileReferences =
-  askSourceFileReferences >>= \case
-    Abbreviation → return abbreviations
-    _            → map pack <$> asks dataFilePaths
-
-
-
-
-
-
-
-
-
--- | WriterT utility functions
-tellLn s = tell $ s ++ "\n"
-tellLnWithDataSource (s,ds) =
-  askSourceFileReferences >>= \case
-    NoSFR → tellLn s
-    _     → tellLn (s ++ ds)
-
-
--- | Statement creation
-dataStatement ∷ Text → Text
-dataStatement = (++) "data: "
-
-dataSourceStatement ∷ [Text] → Text
-dataSourceStatement rs = unwords [" # In", unwordEnglishList rs]
-
-refStatement ∷ Text → Text
-refStatement s = unwords [" #", s]
-
+  stripFilter . mapMaybe (fmap head . fromNullable . splitOn tab) . T.lines
 
 -- | Text utility functions
 stripFilter∷ [Text] → [Text] -- | Remove spaces, drop blanks
-stripFilter = filter (not . null) . map strip
+stripFilter = filter (not . T.null) . map T.strip
 
+tab ∷ Text
 tab = "\t"
 
 indent∷ Text → Text
-indent = (++) "  "
+indent = (<>) "    "
 
 indentAndComment ∷ Text → Text
-indentAndComment = indent . (++) "# "
-
-abbreviations ∷ [Text]
-abbreviations = map (\c → "(" <> singleton c <> ")") ['A'..'Z']
-
-extendText ∷ Int → Text → Text
-extendText i s | length s > i = s
-               | otherwise    = s ++ replicate (i - length s) ' '
-
-lengthenItemRefTuple ∷ [(Text, Text)]
-                     → InitMonad [(Text,Text)]
-lengthenItemRefTuple ts =
-  asks sourceFileReferences >>= \case
-    NoSFR → return ts
-    _     → let maxlength ∷ Int
-                maxlength = maximum $ impureNonNull (0 : map getLength ts)
-
-                getLength ∷ (Text, Text) → Int
-  -- , unwordEnglishListString
-                getLength (t, _) = length t
-            in  return $ map (first (extendText maxlength)) ts
+indentAndComment = indent . (<>) "-- "
 

@@ -3,21 +3,22 @@ module Vandelay.App.Cmd.Make
   , makeTable
   ) where
 
-import           Control.Monad.Trans.RWS       hiding (ask, asks)
+import           Control.Monad.Trans.RWS hiding (ask, asks)
+import           Prelude                 (putStrLn)
 import           Rainbow
-import qualified Rainbow.Translate             as RT
-import           System.FilePath
-
-import           Vandelay.App.Template.ParserT
+import qualified Rainbow.Translate       as RT
+import           RIO.FilePath
+import qualified RIO.Text                as T
 import           Vandelay.DSL.Core
 import           Vandelay.DSL.Estimates
+import           Vandelay.App.Template.IO
 
 
 
 makeTables
     ∷ FilePath        -- ^ Output directory
     → [String]        -- ^ Vandelay template filepath globs
-    → EIO ErrorMsg () -- ^ Error message or ()
+    → ExceptT ErrorMsg (RIO env) () -- ^ Error message or ()
 makeTables dir gs =
   mapM_ (makeTable dir) =<< globPaths gs
 
@@ -25,29 +26,29 @@ makeTables dir gs =
 makeTable
     ∷ FilePath        -- ^ Output directory
     → String          -- ^ Vandelay template filepath
-    → EIO ErrorMsg () -- ^ Error message or ()
+    → ExceptT ErrorMsg (RIO env) () -- ^ Error message or ()
 makeTable dir templatePath = addFilepathIfError $ do
     template  <- readTemplate templatePath
     let outFile = dir </> takeFileName templatePath -<.> "tex"
     (_,_,res) <- runMakeMonad createOutput template
 
-    liftIO . RT.putChunk $ Rainbow.chunk (asText "Success: ") & fore green
-    liftIO . putStrLn $ tTemplatePath
+    liftIO . RT.putChunk $ Rainbow.chunk "Success: " & fore green
+    liftIO . putStrLn $ templatePath
     unsafeWriteFile (Just outFile) res
 
   where
-    addFilepathIfError = prependError ("In template: " ++ tTemplatePath ++ "\n")
-    tTemplatePath = pack templatePath
+    addFilepathIfError = prependError ("In template: " <> tTemplatePath <> "\n")
+    tTemplatePath = T.pack templatePath
 
 
 -- | Internal data types
-type MakeMonad      = RWST VandelayTemplate Text () (EIO ErrorMsg)
+type MakeMonad env  = RWST VandelayTemplate Text () (ExceptT ErrorMsg (RIO env))
 runMakeMonad mm vtl = runRWST mm vtl ()
 
-askTable         ∷ MakeMonad [TableCommand]
-askDesiredModels ∷ MakeMonad [(Maybe FilePath, Text)]
-askSubstitutions ∷ MakeMonad [(Text, Text)]
-askEstimatesHM   ∷ MakeMonad EstimatesHM
+askTable         ∷ MakeMonad env [TableCommand]
+askDesiredModels ∷ MakeMonad env [(FilePath, Text)]
+askSubstitutions ∷ MakeMonad env [(Text, Text)]
+askEstimatesHM   ∷ MakeMonad env EstimatesHM
 
 askTable         = asks table
 askDesiredModels = hoistEitherError . getDesiredModels =<< ask
@@ -55,17 +56,16 @@ askSubstitutions = asks substitutions
 askEstimatesHM   = hoistEitherError . getEstimatesHM =<< ask
 
 -- | Table output creation functions
-createOutput ∷ MakeMonad ()
+createOutput ∷ MakeMonad env ()
 createOutput =  mapM_ doTableCommand =<< askTable
 
-doTableCommand ∷ TableCommand → MakeMonad ()
+doTableCommand ∷ TableCommand → MakeMonad env ()
 doTableCommand (Latex l)    = tellLn l
-doTableCommand (Template t) = tellLn =<< doSubstitution <$> (lift . safeReadFile $ t) <*> askSubstitutions
 doTableCommand (Data   or)  = tellLn =<< hoistEitherError =<< outputRow or <$> askEstimatesHM <*> askDesiredModels
 
 
 -- | Text utility functions
-tellLn ∷ Text → MakeMonad ()
-tellLn s = tell $ s ++ "\n"
+tellLn ∷ Text → MakeMonad env ()
+tellLn s = tell $ s <> "\n"
 
 

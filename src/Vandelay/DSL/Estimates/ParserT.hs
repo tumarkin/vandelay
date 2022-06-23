@@ -4,43 +4,42 @@ module Vandelay.DSL.Estimates.ParserT
 
 import           Control.Monad.Error.Class
 import qualified Control.Monad.State       as S
-import qualified Data.Map.Lazy             as HM
+import qualified RIO.List.Partial          as L'
+import qualified RIO.Map                   as Map
+import qualified RIO.Text                  as T
 import           Text.Parsec               hiding (many, optional, (<|>))
-
 import           Vandelay.DSL.Core         hiding (try)
-
-
 
 type EstParser m = ParsecT String () m
 
 readEstimates ∷ (MonadError ErrorMsg m, MonadIO m)
-                 ⇒ String  -- File name
-                 → m EstimatesHM
+              ⇒ String  -- File name
+              → m EstimatesHM
 readEstimates f = do
   rf <- safeReadFileWithError f "Estimates file"
-  runParserT (estimatesP f) () ("Estimates file: " ++ f) (unpack rf) >>= \case
+  runParserT (estimatesP f) () ("Estimates file: " ++ f) (T.unpack rf) >>= \case
     Left  parseErr → throwError $ tshow parseErr
     Right est      → return est
 
 
 -- Parser
-estimatesP ∷ (MonadError ErrorMsg m, MonadIO m) 
+estimatesP ∷ (MonadError ErrorMsg m, MonadIO m)
            ⇒ String -- Filename
            → EstParser m EstimatesHM
 estimatesP fileName = do
   _models <- header
-  let models = map pack _models
+  let models = map T.pack _models
       numCols = length models
   rows   <- many (rowOfLength numCols <* eol)
 
   let fcn = formCoeffs models rows
 
-  return $ singletonMap fileName fcn
+  return $ Map.singleton fileName fcn
 
 
 -- Header
 header ∷ (MonadError ErrorMsg m, MonadIO m) ⇒ EstParser m [String]
-header = unsafeTail <$> sepBy (many (noneOf "\n\r\t") ) tab <* eol
+header = L'.tail <$> sepBy (many (noneOf "\n\r\t") ) tab <* eol
 
 -- Data row
 rowOfLength ∷ (MonadError ErrorMsg m, MonadIO m) ⇒ Int → EstParser m (CoefCmd, [DataItem])
@@ -63,7 +62,7 @@ newcoef = NewCoef <$> many (noneOf "\t\n\r")
 
 -- DataItems
 textCell ∷ (MonadError ErrorMsg m, MonadIO m) ⇒ EstParser m DataItem
-textCell = StrData . pack <$> many (noneOf "\t\n\r")
+textCell = StrData . T.pack <$> many (noneOf "\t\n\r")
 
 emptyCell ∷ (MonadError ErrorMsg m, MonadIO m) ⇒ EstParser m DataItem
 emptyCell = manyTill space (lookAhead (tab <|> (eol >> return ' '))) >> return BlankData
@@ -90,7 +89,7 @@ sepByN n p sep = (:) <$> (p <* sep) <*> sepByN (n-1) p sep
 -- Make coefficients from the individual rows
 formCoeffs ∷ [ModelName] → [(CoefCmd,[DataItem])] → ModelHM
 formCoeffs mns cmds =
-    unions $ zipWith (\mn chm → singletonMap mn chm) mns coefMaps
+    Map.unions $ zipWith Map.singleton mns coefMaps
 
   where
     coefMaps ∷ [CoefHM]
@@ -112,16 +111,23 @@ processCmd
   → S.State (Maybe Text) [CoefHM] -- ^ (State: Last Coefficient) Updated data
 
 processCmd chms (NewCoef cname, ds) = do
-    S.put (Just $ pack cname)
-    return $ zipWith (\chm d → insertMap (pack cname) [d] chm) chms ds
+    S.put (Just $ T.pack cname)
+    return $ zipWith (\chm d → Map.insert (T.pack cname) [d] chm) chms ds
 
 processCmd chms (AddData, ds) = do
     S.get >>= \case
       Nothing →  return chms -- error "processCmd with no last coefficient"
-      Just lcn → return $ zipWith (\chm d → insertWith (flip (<>)) lcn [d] chm) chms ds -- Flip (<>) required to preserve order
+      Just lcn → return $ zipWith (\chm d → Map.insertWith (flip (<>)) lcn [d] chm) chms ds -- Flip (<>) required to preserve order
 
 -- Estimate formation command
 data CoefCmd = NewCoef String
              | AddData
              deriving Show
 
+----------------------------------------------------------------------------------------------------
+-- Utility function                                                                               --
+----------------------------------------------------------------------------------------------------
+foldlM :: (Foldable t, Monad m) => (b -> a -> m b) -> b -> t a -> m b
+foldlM f z0 xs = foldr c return xs z0
+  -- See Note [List fusion and continuations in 'c']
+    where c x k z = f z x >>= k

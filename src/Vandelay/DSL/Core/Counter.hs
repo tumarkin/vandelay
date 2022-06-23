@@ -17,9 +17,8 @@ module Vandelay.DSL.Core.Counter
   , listifyCounter
   ) where
 
-import           Prelude
-import qualified Data.Map    as M
-import           Data.Monoid ((<>))
+import           RIO
+import qualified RIO.Map    as M
 
 newtype Counter a = Counter { unCounter :: M.Map a Int }
   deriving (Show, Eq)

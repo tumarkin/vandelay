@@ -1,47 +1,39 @@
-import qualified Data.Text                     as T
 import           Options.Applicative
-import           Options.Applicative.Builder   (readerError)
-import           Rainbow                       hiding ((<>))
-import qualified Rainbow.Translate             as RT
-
+import           Rainbow                hiding ((<>))
+import qualified Rainbow.Translate      as RT
+import           Vandelay.App.Cmd.Dhall
 import           Vandelay.App.Cmd.Init
 import           Vandelay.App.Cmd.Make
-import           Vandelay.App.Template.ParserT
 import           Vandelay.DSL.Core
-import           Vandelay.DSL.Estimates
-
-
 
 --------------------------------------------------------------------------------
 -- Program                                                                    --
 --------------------------------------------------------------------------------
 
 main ∷ IO ()
-main = 
-  run =<< execParser
-        (parseCommand `withInfo` "Generate LaTeX tables")
-  
-run ∷ Command → IO ()
-run cmd = do
+main = printError =<< run =<< execParser (parseCommand `withInfo` "Generate LaTeX tables")
 
-  -- Get an EitherT IO as the result
-  let resultEIO = case cmd of
-                    Init files out sort dfr -> initTemplate files out sort dfr
-                    Make files outputPath   -> makeTables   outputPath files
+run ∷ Command → IO (Either Text ())
+run cmd =
+  runSimpleApp . runExceptT $
+      case cmd of
+        Init files out        -> initTemplate files out
+        Make files outputPath -> makeTables   outputPath files
+        Dhall      outputPath -> lift $ installLibrary outputPath
 
-    -- Capture the result of type Either String (String, Handle)
-  runExceptT resultEIO >>= \case
-    Left err  -> RT.putChunkLn (Rainbow.chunk (asText "Vandelay error:") & fore red)
-              >> putStrLn err
-    Right _   -> return ()
+      -- liftIO $ printError resultEIO
 
 
+printError (Right _)  = pure ()
+printError (Left err) = RT.putChunkLn (Rainbow.chunk ("Vandelay error:") & fore red)
+                        >> RT.putChunkLn (Rainbow.chunk (err))
 --------------------------------------------------------------------------------
 -- Commands                                                                   --
 --------------------------------------------------------------------------------
 data Command
-    = Init [File] Output SortOptions SourceFileReferences
+    = Init [File] Output -- SortOptions -- SourceFileReferences
     | Make [File] OutputPath
+    | Dhall OutputPath
     deriving (Show)
 
 type File       = String
@@ -57,8 +49,9 @@ withInfo opts desc = info (helper <*> opts) $ progDesc desc
 
 parseCommand ∷ Parser Command
 parseCommand = subparser $
-    command "init" (parseInit `withInfo` "Create a blank template from a tab-separated results file(s)") <>
-    command "make" (parseMake `withInfo` "Generate LaTeX from a template file(s)")
+    command "init"  (parseInit  `withInfo` "Create a blank template from a tab-separated results file(s)") <>
+    command "make"  (parseMake  `withInfo` "Generate LaTeX from a template file(s)") <>
+    command "dhall" (parseDhall `withInfo` "Install DHALL library")
 
 
 
@@ -66,8 +59,6 @@ parseInit ∷ Parser Command
 parseInit = Init
     <$> some (argument str (metavar "TAB-SEPARATED-FILE(S)"))
     <*> parseOutput
-    <*> parseSortOptions
-    <*> parseSourceFileReferences
 
 parseMake ∷ Parser Command
 parseMake = Make
@@ -80,8 +71,12 @@ parseMake = Make
                            <> help "Destination for the processed templates"
                            <> value "."
                            )
-        
-     
+
+parseDhall ∷ Parser Command
+parseDhall = Dhall
+    <$> argument str (metavar "DHALL-LIBRARY-PATH")
+
+
 
 
 -- Initialization options
@@ -93,41 +88,4 @@ parseOutput =
                        <> metavar "FILENAME"
                        <> help "Save initialization template file"
                        )
-
-parseSourceFileReferences ∷ Parser SourceFileReferences
-parseSourceFileReferences = option (str >>= readSourceFileReferences) ( long "include-source-file-references"
-                                  <> short 'i'
-                                  <> help "Include source file references for model and variable cross-referencing."
-                                  <> value NoSFR -- Default value
-                            )
-
-readSourceFileReferences ∷ String → ReadM SourceFileReferences
-readSourceFileReferences s | toLower s `elem` ["f","full"]         = return FullPath
-                           | toLower s `elem` ["a","abbreviated"]  = return Abbreviation
-                           | otherwise                               = readerError $ unwords ["Source file referencing option", s, "not recognized. Use (F)ull or (A)bbreviated."]
-
-parseSortOptions = SortOptions
-    <$> parseSortModels
-    <*> parseSortVars
-
-parseSortModels ∷ Parser Bool
-parseSortModels = switch ( long "no-sort-models"
-                       <> short 'm'
-                       <> hidden
-                       <> help "Sort models by order of appearance instead of alphabetically."
-                       )
- 
-
-parseSortVars ∷ Parser Bool
-parseSortVars = switch ( long "no-sort-vars"
-                       <> short 'v'
-                       <> hidden
-                       <> help "Sort variables by order of appearance instead of alphabetically."
-                       )
-
-
-
-
-
-
 
