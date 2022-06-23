@@ -31,8 +31,6 @@ module Vandelay.DSL.Core.Types
 
     -- * Output templates
   , VandelayTemplate(..)
-  -- , blankVandelayTemplate
-
   , TableCommand(..)
 
   , getDesiredModels
@@ -80,24 +78,6 @@ data VandelayTemplate = VandelayTemplate
     , substitutions ∷ [(Text, Text)]
     } deriving (Show)
 
--- blankVandelayTemplate = VandelayTemplate
---     { desiredModels = []
---     , estimatesHM   = mempty
---     , table         = []
---     , substitutions = []
---     }
-
--- instance Semigroup VandelayTemplate where
---   a <> b = VandelayTemplate
---       { desiredModels = desiredModels a <>  desiredModels b
---       , estimatesHM   = estimatesHM a   <>  estimatesHM b
---       , table         = table a         <>  table b
---       , substitutions = substitutions a <>  substitutions b
---       }
-
--- instance Monoid VandelayTemplate where
---   mempty = blankVandelayTemplate
-
 -- Table Commands
 data TableCommand
     = Latex    Text
@@ -127,12 +107,6 @@ data OutputRequest = OutputRequest
   { _oName       ∷ !Text
   , _oCoeffs     ∷ ![Text]
   , _oFormatSpec ∷ !FormatSpec
-  -- , _oItemIdx    ∷ Int
-  -- , _oFormat     ∷ String
-  -- , _oSurround   ∷ (Text, Text)
-  -- , _oScale      ∷ Double
-  -- , _oModifyZero ∷ Bool -- ^ Modify zero (i.e. 0.000 to <0.001)
-  -- , _oEmpty      ∷ Text
   } deriving (Show, Ord, Eq)
 
 instance Default OutputRequest where
@@ -140,12 +114,6 @@ instance Default OutputRequest where
       { _oName       = ""
       , _oCoeffs     = []
       , _oFormatSpec = def
-      -- , _oItemIdx    = 0
-      -- , _oFormat     = "%1.3f"
-      -- , _oSurround   = ("", "")
-      -- , _oScale      = 1
-      -- , _oModifyZero = True
-      -- , _oEmpty      = ""
       }
 
 data FormatSpec = FormatSpec

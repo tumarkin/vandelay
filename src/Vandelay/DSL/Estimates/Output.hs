@@ -6,7 +6,6 @@ import           Data.NonNull
 import           Data.Sequences    (index)
 import qualified RIO.List          as L
 import qualified RIO.Map           as M
-import qualified RIO.Set           as Set
 import qualified RIO.Text          as T
 import           Vandelay.DSL.Core
 

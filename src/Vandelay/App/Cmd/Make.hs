@@ -61,7 +61,6 @@ createOutput =  mapM_ doTableCommand =<< askTable
 
 doTableCommand ∷ TableCommand → MakeMonad env ()
 doTableCommand (Latex l)    = tellLn l
--- doTableCommand (Template t) = tellLn =<< doSubstitution <$> (lift . safeReadFile $ t) <*> askSubstitutions
 doTableCommand (Data   or)  = tellLn =<< hoistEitherError =<< outputRow or <$> askEstimatesHM <*> askDesiredModels
 
 

@@ -1,11 +1,9 @@
-{-# LANGUAGE ViewPatterns #-}
-import qualified Data.Text                   as T
 import           Options.Applicative
-import           Rainbow                     hiding ((<>))
-import qualified Rainbow.Translate           as RT
+import           Rainbow                hiding ((<>))
+import qualified Rainbow.Translate      as RT
+import           Vandelay.App.Cmd.Dhall
 import           Vandelay.App.Cmd.Init
 import           Vandelay.App.Cmd.Make
-import           Vandelay.App.Cmd.Dhall
 import           Vandelay.DSL.Core
 
 --------------------------------------------------------------------------------
@@ -19,9 +17,9 @@ run ∷ Command → IO (Either Text ())
 run cmd =
   runSimpleApp . runExceptT $
       case cmd of
-        Init files out sort dfr -> initTemplate files out sort dfr
-        Make files outputPath   -> makeTables   outputPath files
-        Dhall      outputPath   -> lift $ installLibrary outputPath
+        Init files out        -> initTemplate files out
+        Make files outputPath -> makeTables   outputPath files
+        Dhall      outputPath -> lift $ installLibrary outputPath
 
       -- liftIO $ printError resultEIO
 
@@ -33,7 +31,7 @@ printError (Left err) = RT.putChunkLn (Rainbow.chunk ("Vandelay error:") & fore 
 -- Commands                                                                   --
 --------------------------------------------------------------------------------
 data Command
-    = Init [File] Output SortOptions SourceFileReferences
+    = Init [File] Output -- SortOptions -- SourceFileReferences
     | Make [File] OutputPath
     | Dhall OutputPath
     deriving (Show)
@@ -61,8 +59,6 @@ parseInit ∷ Parser Command
 parseInit = Init
     <$> some (argument str (metavar "TAB-SEPARATED-FILE(S)"))
     <*> parseOutput
-    <*> parseSortOptions
-    <*> parseSourceFileReferences
 
 parseMake ∷ Parser Command
 parseMake = Make
@@ -92,42 +88,4 @@ parseOutput =
                        <> metavar "FILENAME"
                        <> help "Save initialization template file"
                        )
-
-parseSourceFileReferences ∷ Parser SourceFileReferences
-parseSourceFileReferences = option (str >>= readSourceFileReferences) ( long "include-source-file-references"
-                                  <> short 'i'
-                                  <> help "Include source file references for model and variable cross-referencing."
-                                  <> value NoSFR -- Default value
-                            )
-
-readSourceFileReferences ∷ String → ReadM SourceFileReferences
-readSourceFileReferences (T.toLower . T.pack -> s)
-    | s `elem` ["f","full"]         = return FullPath
-    | s `elem` ["a","abbreviated"]  = return Abbreviation
-    | otherwise                     = readerError $ unwords ["Source file referencing option", T.unpack s, "not recognized. Use (F)ull or (A)bbreviated."]
-
-parseSortOptions = SortOptions
-    <$> parseSortModels
-    <*> parseSortVars
-
-parseSortModels ∷ Parser Bool
-parseSortModels = switch ( long "no-sort-models"
-                       <> short 'm'
-                       <> hidden
-                       <> help "Sort models by order of appearance instead of alphabetically."
-                       )
-
-
-parseSortVars ∷ Parser Bool
-parseSortVars = switch ( long "no-sort-vars"
-                       <> short 'v'
-                       <> hidden
-                       <> help "Sort variables by order of appearance instead of alphabetically."
-                       )
-
-
-
-
-
-
 

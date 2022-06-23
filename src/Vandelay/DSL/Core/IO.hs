@@ -1,7 +1,5 @@
-{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ExplicitForAll #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-
 module Vandelay.DSL.Core.IO
   ( safeReadFile
   , safeReadFileWithError
@@ -21,7 +19,6 @@ import           Prelude                   (putStrLn)
 import           RIO.Directory
 import qualified RIO.Text                  as T
 import           System.FilePath.Glob
-import           System.IO                 (IOMode (..), openFile)
 import           Vandelay.DSL.Core.Modules as VC
 
 

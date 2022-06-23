@@ -19,7 +19,6 @@ module Vandelay.DSL.Core.Counter
 
 import           RIO
 import qualified RIO.Map    as M
--- import           Data.Monoid ((<>))
 
 newtype Counter a = Counter { unCounter :: M.Map a Int }
   deriving (Show, Eq)

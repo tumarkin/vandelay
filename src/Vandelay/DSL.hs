@@ -1,5 +1,4 @@
-module Vandelay.DSL
-  where
+module Vandelay.DSL where
 
 import           Control.Monad.Error.Class
 import           Control.Monad.RWS

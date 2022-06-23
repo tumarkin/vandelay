@@ -5,7 +5,6 @@ module Vandelay.DSL.Estimates.ParserT
 import           Control.Monad.Error.Class
 import qualified Control.Monad.State       as S
 import qualified RIO.List.Partial          as L'
-import qualified RIO.Map                   as HM
 import qualified RIO.Map                   as Map
 import qualified RIO.Text                  as T
 import           Text.Parsec               hiding (many, optional, (<|>))
