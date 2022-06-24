@@ -55,8 +55,11 @@ formatSpecD ∷ Decoder FormatSpec
 formatSpecD = record $ FormatSpec
     <$> (fromIntegral <$> field "index" natural)
     <*> field "format" strictText
-    <*> pure ("", "")
+    <*> field "surround" (D.maybe surroundD)
     <*> field "scale" D.double
-    <*> pure True
+    <*> field "reformat_zero" D.bool
     <*> field "empty" (D.maybe strictText)
+
+surroundD ∷ Decoder (Text, Text)
+surroundD = record $ (,) <$> field "before" strictText <*> field "after" strictText
 

@@ -1,11 +1,7 @@
 # vandelay
 A LaTeX table importer/exporter
 
-
 # Overview
-
-
-
 
 **Benefits**
 
@@ -22,6 +18,7 @@ A LaTeX table importer/exporter
 * Show or hide key statistics (such as *t*-statistic) as necessary.
 
 # Example
+
 To do
 
 # Documentation
@@ -37,6 +34,9 @@ Full detailed documentation is forthcoming. For now, please refer to the example
 
 # Version history
 
+* 0.1.2.0: (Dhall)[https://dhall-lang.org] templating. Greatly improves
+           templating flexibility and reduces redundancy.
+
 * 0.1.1.0: All Vandelay templates are processed to a corresponding file with
            the terminal extension changed to 'tex'. The output directory is
            customizable from the command line. Removed destination tex file 
@@ -46,7 +46,6 @@ Full detailed documentation is forthcoming. For now, please refer to the example
 
 * Improve user messages when a template is misspecified
 * Output to other formats (e.g. DOCX)
-* Warn user when a name for a substitution embeds another, but allow for substitutions in substitutions.
 
 **Completed**
 
@@ -61,6 +60,8 @@ Full detailed documentation is forthcoming. For now, please refer to the example
 * **DONE** Allow for missing data in variable lists (useful when multiple estimation results files are joined)
 * **DONE** Allow data commands to end with a semicolon
 * **DONE** 0.00000 is changed to <0.00001 (for arbitrary number of zeros)
+* **DONE** Warn user when a name for a substitution embeds another, but allow for substitutions in substitutions.
+           (Unnecessary with Dhall templating)
 
 
 # Contributing

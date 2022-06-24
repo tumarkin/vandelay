@@ -119,7 +119,7 @@ instance Default OutputRequest where
 data FormatSpec = FormatSpec
   { _oItemIdx    :: !Int
   , _oFormat     :: !Text
-  , _oSurround   :: !(Text, Text)
+  , _oSurround   :: !(Maybe (Text, Text))
   , _oScale      :: !Double
   , _oModifyZero :: !Bool
   , _oEmpty      :: !(Maybe Text)
@@ -129,7 +129,7 @@ instance Default FormatSpec where
     def = FormatSpec
       { _oItemIdx    = 0
       , _oFormat     = "%1.3f"
-      , _oSurround   = ("", "")
+      , _oSurround   = Nothing
       , _oScale      = 1
       , _oModifyZero = True
       , _oEmpty      = Nothing
@@ -146,7 +146,7 @@ texify or  BlankData    = fromMaybe "" $ or^.oFormatSpec.oEmpty
 texify or (ValData v s) = surroundText st (changeAllZeros caz (commaPrintf fmt (scale * v))) <> makeStars s
   where
     caz   = or^.oFormatSpec.oModifyZero
-    st    = or^.oFormatSpec.oSurround
+    st    = fromMaybe ("", "") $ or^.oFormatSpec.oSurround
     fmt   = T.unpack $ or^.oFormatSpec.oFormat
     scale = or^.oFormatSpec.oScale
 

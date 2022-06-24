@@ -82,9 +82,9 @@ let header_config = {caption, column_specification, font_size, header_size, head
 let pb_config     = {column_specification, font_size, number_of_models, table_header}
 
 -- Custom Functions
-let base_format     = { index = 0, format = "%03.2f", scale = 1.0, empty = None Text }
-let tstat_format    = base_format with index = 1
-let line_space      = latex "\\addlinespace[1pt]"
+let base_format     = { index = 0, format = "%03.2f", scale = 1.0, reformat_zero = True, surround = vl.surround.bare, empty = None Text }
+let tstat_format    = base_format with index = 1 with surround = vl.surround.parentheses
+let line_space      = latex "\\\\addlinespace[1pt]"
 
 let coefficient_and_tstat = \\(cname: Text) -> \\(tname: Text) -> \\(code : List Text) ->
    [ row base_format cname code
@@ -137,7 +137,7 @@ in { models
     modelText = T.intercalate "\n    , " $ concatMap makeModels fpAbbrevModels
       where
         makeModels (_, abbrev, models) =
-            map (\m -> "(" <> abbrev <> ", " <> quote m <> ")") models
+            map (\m -> "{ file = " <> abbrev <> ", column = " <> quote m <> " }") models
 
     quote t = "\"" <> t <> "\""
 
