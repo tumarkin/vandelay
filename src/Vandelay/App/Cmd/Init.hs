@@ -82,9 +82,9 @@ let header_config = {caption, column_specification, font_size, header_size, head
 let pb_config     = {column_specification, font_size, number_of_models, table_header}
 
 -- Custom Functions
-let base_format     = { index = 0, format = "%03.2f", scale = 1.0, reformat_zero = True, surround = vl.surround.bare, empty = None Text }
-let tstat_format    = base_format with index = 1 with surround = vl.surround.parentheses
-let line_space      = latex "\\\\addlinespace[1pt]"
+let base_format  = { index = 0, format = "%03.2f", scale = 1.0, reformat_zero = True, surround = vl.surround.bare, empty = None Text }
+let tstat_format = base_format with index = 1 with surround = vl.surround.parentheses
+let line_space   = latex "\\\\addlinespace[1pt]"
 
 let coefficient_and_tstat = \\(cname: Text) -> \\(tname: Text) -> \\(code : List Text) ->
    [ row base_format cname code
@@ -107,7 +107,7 @@ let fixed_effects_clustering =
 
 let table =
     vl.header header_config
-    \# section_descripte "CONTROL HEADER"
+    \# section_describe "CONTROL HEADER"
     \# coefficient_and_tstat "VARIABLE NAME"        "T-STAT NAME"             ["CODE-1", "CODE-2"]
     \# vl.page_break pb_config
     \# [line_space]
@@ -121,7 +121,7 @@ in { models
 
   where
     filesText ∷ Text
-    filesText = T.unlines $ map (\(fp, abbrev, _) -> abbrev <> " = " <> quote fp) fpAbbrevModels
+    filesText = T.unlines $ map (\(fp, abbrev, _) -> "let " <> abbrev <> " = " <> quote fp) fpAbbrevModels
 
 
     fpAbbrevModels ∷ [(Text, Text, [Text])]
