@@ -21,7 +21,7 @@ let RowSpec =
 let Command =  <Latex : Text | Row : RowSpec >
 
 let latex            = \(t : Text) -> Command.Latex t
-let latex_ln         = \(t : Text) -> Command.Latex (t ++ " \\")
+let latex_ln         = \(t : Text) -> Command.Latex (t ++ " \\\\")
 let latex_columns_ln = \(fields : List Text) -> latex_ln (text.concatMapSep " & " Text bracket fields)
 let row              = \(format_spec : FormatSpec) -> \(name : Text) -> \(code : List Text) -> Command.Row {name, code, format_spec}
    

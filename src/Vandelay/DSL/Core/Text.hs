@@ -2,9 +2,7 @@ module Vandelay.DSL.Core.Text
   ( unwordEnglishList
 
   , joinAmps
-
-  , commaPrintf
-
+  , packPrintf
   , T.strip
   , T'.splitOn
   , surroundText
@@ -12,9 +10,6 @@ module Vandelay.DSL.Core.Text
 
   ) where
 
--- import           Control.Monad.Error.Class
--- import           Text.Parsec               hiding (many, optional, (<|>))
-import           Data.Char                 (isDigit)
 import           Data.NonNull
 import qualified RIO.List.Partial          as L'
 import qualified RIO.Text                  as T
@@ -28,24 +23,14 @@ unwordEnglishList []      = ""
 unwordEnglishList [s1]    = s1
 unwordEnglishList [s1,s2] = s1 <> " and " <> s2
 unwordEnglishList ss      = (T.intercalate ", " (L'.init ss)) <> ", and " <> L'.last ss
-  -- where nss = impureNonNull ss
 
-
-commaPrintf ∷ String -- Format
-            → Double -- Value
-            → Text
-commaPrintf fmt = commify . T.pack . printf fmt
-
-commify ∷ Text → Text
-commify s = revPrefix <> commiint <> fractional
-    where
-  (dirtyInt, fractional)  = T.break ( == '.' ) s
-  (revInteger, revPrefix) = T.span isDigit . T.reverse $ dirtyInt
-  commiint                = T.reverse . T.intercalate "," . T.chunksOf 3 . T.strip $ revInteger
+packPrintf ∷ String -- Format
+           → Double -- Value
+           → Text
+packPrintf fmt = T.pack . printf fmt
 
 joinAmps ∷ [Text] → Text
 joinAmps = T.intercalate " & "
-
 
 surroundText ∷ (Text, Text) → Text → Text
 surroundText (prefix, postfix) s = prefix <> s <> postfix

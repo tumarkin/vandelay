@@ -1,10 +1,10 @@
 name:                vandelay
-version:             0.1.2.0
+version:             0.1.2.2
 github:              "tumarkin/vandelay"
 license:             BSD3
-author:              "Author name here"
-maintainer:          "example@example.com"
-copyright:           "2020 Author name here"
+author:              "Robert Tumarkin"
+maintainer:          "tumarkin@gmail.com"
+copyright:           "2022 Robert Tumarkin"
 
 extra-source-files:
 - README.md
