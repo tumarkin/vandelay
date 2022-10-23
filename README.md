@@ -34,7 +34,7 @@ Full detailed documentation is forthcoming. For now, please refer to the example
 
 # Version history
 
-* 0.1.2.0: (Dhall)[https://dhall-lang.org] templating. Greatly improves
+* 0.1.2.0: [Dhall](https://dhall-lang.org) templating. Greatly improves
            templating flexibility and reduces redundancy.
 
 * 0.1.1.0: All Vandelay templates are processed to a corresponding file with
