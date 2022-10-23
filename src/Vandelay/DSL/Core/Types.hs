@@ -143,7 +143,8 @@ makeLenses ''FormatSpec
 texify ∷ OutputRequest → DataItem → Text
 texify _  (StrData t)   = "{" <> t <> "}"
 texify or  BlankData    = fromMaybe "" $ or^.oFormatSpec.oEmpty
-texify or (ValData v s) = surroundText st (changeAllZeros caz (commaPrintf fmt (scale * v))) <> makeStars s
+-- texify or (ValData v s) = surroundText st (changeAllZeros caz (commaPrintf fmt (scale * v))) <> makeStars s
+texify or (ValData v s) = surroundText st (changeAllZeros caz (packPrintf fmt (scale * v))) <> makeStars s
   where
     caz   = or^.oFormatSpec.oModifyZero
     st    = fromMaybe ("", "") $ or^.oFormatSpec.oSurround
