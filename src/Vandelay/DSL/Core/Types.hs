@@ -41,7 +41,7 @@ module Vandelay.DSL.Core.Types
 
 -- import           Lens.Simple               (makeLenses)
 import           Data.Default.Class
-import           Lens.Micro.TH
+-- import           Lens.Micro.TH
 import qualified RIO.Text                  as T
 
 import           Vandelay.DSL.Core.Modules
@@ -141,8 +141,8 @@ instance Default FormatSpec where
       , empty      = Nothing
       }
 
-makeLenses ''OutputRequest
-makeLenses ''FormatSpec
+-- makeLenses ''OutputRequest
+-- makeLenses ''FormatSpec
 
 
 -- Output functions
