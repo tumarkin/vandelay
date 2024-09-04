@@ -18,14 +18,14 @@ getEstimates ∷ VandelayTemplateDhall → ExceptT ErrorMsg (RIO env) VandelayTe
 getEstimates vtdh = do
     ests <- mconcat <$> mapM readEstimates estimateFiles
     pure VandelayTemplate
-      { desiredModels = first T.unpack <$> desiredModelsD vtdh
+      { desiredModels = first T.unpack <$> vtdh.desiredModelsD 
       , estimatesHM   = ests
-      , table         = tableD vtdh
+      , table         = vtdh.tableD 
       , substitutions = []
-      , target        = targetD vtdh
+      , target        = vtdh.targetD 
       }
   where
-    estimateFiles = T.unpack . fst <$> desiredModelsD vtdh
+    estimateFiles = T.unpack . fst <$> vtdh.desiredModelsD 
 
 data VandelayTemplateDhall = VandelayTemplateDhall
     { desiredModelsD ∷ [(Text, Text)] -- ^ (Maybe Path, Model Name)

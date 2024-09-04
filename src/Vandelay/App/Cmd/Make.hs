@@ -51,11 +51,11 @@ askSubstitutions ∷ MakeMonad env [(Text, Text)]
 askEstimatesHM   ∷ MakeMonad env EstimatesHM
 askTarget        ∷ MakeMonad env Target
 
-askTable         = asks table
+askTable         = asks (.table)
 askDesiredModels = hoistEitherError . getDesiredModels =<< ask
-askSubstitutions = asks substitutions
+askSubstitutions = asks (.substitutions)
 askEstimatesHM   = hoistEitherError . getEstimatesHM =<< ask
-askTarget        = asks target
+askTarget        = asks (.target)
 
 -- | Table output creation functions
 createOutput ∷ MakeMonad env ()

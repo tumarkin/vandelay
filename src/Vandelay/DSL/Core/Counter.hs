@@ -24,7 +24,7 @@ newtype Counter a = Counter { unCounter :: M.Map a Int }
   deriving (Show, Eq)
 
 instance Ord a => Semigroup (Counter a) where
-  ca <> cb = Counter $ M.unionWith (+) (unCounter ca) (unCounter cb)
+  ca <> cb = Counter $ M.unionWith (+) ca.unCounter cb.unCounter 
 
 instance Ord a => Monoid (Counter a) where
   mempty        = emptyCounter
@@ -36,7 +36,7 @@ count :: (Foldable f, Ord a) => f a -> Counter a
 count = foldr countItem' emptyCounter
 
 countItem :: (Ord a) => Counter a -> a -> Counter a
-countItem c a = Counter $ M.insertWith (+) a 1 (unCounter c)
+countItem c a = Counter $ M.insertWith (+) a 1 c.unCounter
 
 countItem' :: (Ord a) => a -> Counter a -> Counter a
 countItem' = flip countItem
@@ -48,5 +48,5 @@ countItems' :: (Foldable f, Ord a) => f a -> Counter a -> Counter a
 countItems' = flip countItems
 
 listifyCounter ∷ Counter a → [(a, Int)]
-listifyCounter = M.toList . unCounter 
+listifyCounter = M.toList . (.unCounter)
 

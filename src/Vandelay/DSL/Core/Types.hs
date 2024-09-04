@@ -16,15 +16,15 @@ module Vandelay.DSL.Core.Types
   , OutputRequest(..)
   , FormatSpec(..)
 
-  , oName
-  , oCoeffs
-  , oFormatSpec
-  , oItemIdx
-  , oFormat
-  , oScale
-  , oSurround
-  , oEmpty
-  , oModifyZero
+  -- , oName
+  -- , oCoeffs
+  -- , oFormatSpec
+  -- , oItemIdx
+  -- , oFormat
+  -- , oScale
+  -- , oSurround
+  -- , oEmpty
+  -- , oModifyZero
 
 
   , texify
@@ -98,47 +98,47 @@ getDesiredModels ∷ VandelayTemplate → Either Text [(FilePath, Text)]
 getEstimatesHM   ∷ VandelayTemplate → Either Text EstimatesHM
 
 getDesiredModels vt
-    | null . desiredModels $ vt = Left  "Models not specified"
-    | otherwise                 = Right $ desiredModels vt
+    | null vt.desiredModels = Left  "Models not specified"
+    | otherwise             = Right vt.desiredModels 
 
 getEstimatesHM vt
-    | null . estimatesHM $ vt = Left "Estimate file not specified"
-    | otherwise               = Right $ estimatesHM vt
+    | null vt.estimatesHM = Left "Estimate file not specified"
+    | otherwise           = Right vt.estimatesHM 
 
 
 
 
 -- Output request
 data OutputRequest = OutputRequest
-  { _oName       ∷ !Text
-  , _oCoeffs     ∷ ![Text]
-  , _oFormatSpec ∷ !FormatSpec
+  { name       ∷ !Text
+  , coeffs     ∷ ![Text]
+  , formatSpec ∷ !FormatSpec
   } deriving (Show, Ord, Eq)
 
 instance Default OutputRequest where
     def = OutputRequest
-      { _oName       = ""
-      , _oCoeffs     = []
-      , _oFormatSpec = def
+      { name       = ""
+      , coeffs     = []
+      , formatSpec = def
       }
 
 data FormatSpec = FormatSpec
-  { _oItemIdx    :: !Int
-  , _oFormat     :: !Text
-  , _oSurround   :: !(Maybe (Text, Text))
-  , _oScale      :: !Double
-  , _oModifyZero :: !Bool
-  , _oEmpty      :: !(Maybe Text)
+  { itemIdx    :: !Int
+  , format     :: !Text
+  , surround   :: !(Maybe (Text, Text))
+  , scale      :: !Double
+  , modifyZero :: !Bool
+  , empty      :: !(Maybe Text)
   } deriving (Show, Ord, Eq)
 
 instance Default FormatSpec where
     def = FormatSpec
-      { _oItemIdx    = 0
-      , _oFormat     = "%1.3f"
-      , _oSurround   = Nothing
-      , _oScale      = 1
-      , _oModifyZero = True
-      , _oEmpty      = Nothing
+      { itemIdx    = 0
+      , format     = "%1.3f"
+      , surround   = Nothing
+      , scale      = 1
+      , modifyZero = True
+      , empty      = Nothing
       }
 
 makeLenses ''OutputRequest
@@ -148,14 +148,14 @@ makeLenses ''FormatSpec
 -- Output functions
 texify ∷ OutputRequest → DataItem → Text
 texify _  (StrData t)   = "{" <> t <> "}"
-texify or  BlankData    = fromMaybe "" $ or^.oFormatSpec.oEmpty
+texify or  BlankData    = fromMaybe "" $ or.formatSpec.empty
 -- texify or (ValData v s) = surroundText st (changeAllZeros caz (commaPrintf fmt (scale * v))) <> makeStars s
 texify or (ValData v s) = surroundText st (changeAllZeros caz (packPrintf fmt (scale * v))) <> makeStars s
   where
-    caz   = or^.oFormatSpec.oModifyZero
-    st    = fromMaybe ("", "") $ or^.oFormatSpec.oSurround
-    fmt   = T.unpack $ or^.oFormatSpec.oFormat
-    scale = or^.oFormatSpec.oScale
+    caz   = or.formatSpec.modifyZero
+    st    = fromMaybe ("", "") $ or.formatSpec.surround
+    fmt   = T.unpack $ or.formatSpec.format
+    scale = or.formatSpec.scale
 
 makeStars ∷ Int → Text
 makeStars i | i == 0    = ""

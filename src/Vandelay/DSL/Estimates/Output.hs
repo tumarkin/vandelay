@@ -18,14 +18,14 @@ outputRow ∷ Target
           → Either ErrorMsg Text
 outputRow _tgt or est ms = do
   result <- mapM _findDataItem ms
-  Right $ joinAmps ( or^.oName : -- Name
+  Right $ joinAmps ( or.name : -- Name
                      map (texify or) result
                    )
           <> "\\\\"
 
   where
     _findDataItem ∷ (FilePath, ModelName) → Either ErrorMsg DataItem
-    _findDataItem mn = findDataItem mn (or^.oCoeffs) (or^.oFormatSpec.oItemIdx) est
+    _findDataItem mn = findDataItem mn or.coeffs or.formatSpec.itemIdx est
 
 findDataItem ∷ (FilePath, ModelName) -- ^ Estimates file, ModelName
              → [Text]                -- ^ Possible coefficients
