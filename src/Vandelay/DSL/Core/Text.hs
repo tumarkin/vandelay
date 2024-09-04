@@ -15,6 +15,7 @@ import qualified RIO.List.Partial          as L'
 import qualified RIO.Text                  as T
 import qualified RIO.Text.Partial          as T'
 import           Text.Printf
+
 import           Vandelay.DSL.Core.Modules hiding (try)
 
 
@@ -22,7 +23,7 @@ unwordEnglishList ∷ [Text] → Text
 unwordEnglishList []      = ""
 unwordEnglishList [s1]    = s1
 unwordEnglishList [s1,s2] = s1 <> " and " <> s2
-unwordEnglishList ss      = (T.intercalate ", " (L'.init ss)) <> ", and " <> L'.last ss
+unwordEnglishList ss      = T.intercalate ", " (L'.init ss) <> ", and " <> L'.last ss
 
 packPrintf ∷ String -- Format
            → Double -- Value

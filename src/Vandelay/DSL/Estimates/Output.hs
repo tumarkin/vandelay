@@ -7,14 +7,16 @@ import           Data.Sequences    (index)
 import qualified RIO.List          as L
 import qualified RIO.Map           as M
 import qualified RIO.Text          as T
+
 import           Vandelay.DSL.Core
 
 -- | Output a row
-outputRow ∷ OutputRequest
+outputRow ∷ Target
+          → OutputRequest
           → EstimatesHM
           → [(FilePath, ModelName)]
           → Either ErrorMsg Text
-outputRow or est ms = do
+outputRow _tgt or est ms = do
   result <- mapM _findDataItem ms
   Right $ joinAmps ( or^.oName : -- Name
                      map (texify or) result
@@ -88,10 +90,10 @@ findDataItem (efp, mn) pCoefs idx est = do
                             , "Use explicit FILENAME:MODEL syntax"
                             ]
 
-    noCoefErr ∷ Text
-    noCoefErr = T.unwords [ "Coefficients", unwordEnglishList pCoefs
-                        , "not found in estimate", mn
-                        ]
+    -- noCoefErr ∷ Text
+    -- noCoefErr = T.unwords [ "Coefficients", unwordEnglishList pCoefs
+    --                     , "not found in estimate", mn
+    --                     ]
 
     noCoefferr ∷ Text
     noCoefferr = T.unwords

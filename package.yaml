@@ -63,3 +63,5 @@ default-extensions:
 - TupleSections
 - UnicodeSyntax
 - ViewPatterns
+- ExplicitForAll
+- ScopedTypeVariables

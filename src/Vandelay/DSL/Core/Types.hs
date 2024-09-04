@@ -32,6 +32,7 @@ module Vandelay.DSL.Core.Types
     -- * Output templates
   , VandelayTemplate(..)
   , TableCommand(..)
+  , Target
 
   , getDesiredModels
   , getEstimatesHM
@@ -42,6 +43,7 @@ module Vandelay.DSL.Core.Types
 import           Data.Default.Class
 import           Lens.Micro.TH
 import qualified RIO.Text                  as T
+
 import           Vandelay.DSL.Core.Modules
 import           Vandelay.DSL.Core.Text
 
@@ -76,13 +78,17 @@ data VandelayTemplate = VandelayTemplate
     , estimatesHM   ∷ EstimatesHM
     , table         ∷ [TableCommand]
     , substitutions ∷ [(Text, Text)]
+    , target        ∷ Target
     } deriving (Show)
+
+data Target = LatexTarget | TypstTarget
+  deriving (Show)
 
 -- Table Commands
 data TableCommand
-    = Latex    Text
+    = Raw Text
     -- | Template FilePath
-    | Data     OutputRequest
+    | Data OutputRequest
     deriving (Show)
 
 

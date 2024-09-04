@@ -8,6 +8,7 @@ import qualified RIO.List.Partial          as L'
 import qualified RIO.Map                   as Map
 import qualified RIO.Text                  as T
 import           Text.Parsec               hiding (many, optional, (<|>))
+
 import           Vandelay.DSL.Core         hiding (try)
 
 type EstParser m = ParsecT String () m

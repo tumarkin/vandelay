@@ -9,10 +9,10 @@ import           Rainbow
 import qualified Rainbow.Translate       as RT
 import           RIO.FilePath
 import qualified RIO.Text                as T
+
 import           Vandelay.DSL.Core
 import           Vandelay.DSL.Estimates
 import           Vandelay.App.Template.IO
-
 
 
 makeTables
@@ -49,19 +49,24 @@ askTable         ∷ MakeMonad env [TableCommand]
 askDesiredModels ∷ MakeMonad env [(FilePath, Text)]
 askSubstitutions ∷ MakeMonad env [(Text, Text)]
 askEstimatesHM   ∷ MakeMonad env EstimatesHM
+askTarget        ∷ MakeMonad env Target
 
 askTable         = asks table
 askDesiredModels = hoistEitherError . getDesiredModels =<< ask
 askSubstitutions = asks substitutions
 askEstimatesHM   = hoistEitherError . getEstimatesHM =<< ask
+askTarget        = asks target
 
 -- | Table output creation functions
 createOutput ∷ MakeMonad env ()
-createOutput =  mapM_ doTableCommand =<< askTable
+createOutput = do
+    tgt <- askTarget 
+    mapM_ (doTableCommand tgt) =<< askTable
 
-doTableCommand ∷ TableCommand → MakeMonad env ()
-doTableCommand (Latex l)    = tellLn l
-doTableCommand (Data   or)  = tellLn =<< hoistEitherError =<< outputRow or <$> askEstimatesHM <*> askDesiredModels
+doTableCommand ∷ Target → TableCommand → MakeMonad env ()
+doTableCommand _   (Raw l)    = tellLn l
+doTableCommand tgt (Data   or)  = 
+    tellLn =<< hoistEitherError =<< outputRow tgt or <$> askEstimatesHM <*> askDesiredModels
 
 
 -- | Text utility functions

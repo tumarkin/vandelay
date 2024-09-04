@@ -6,6 +6,7 @@ import           Dhall
 import           Dhall.Marshal.Decode           as D
 import           RIO
 import qualified RIO.Text                       as T
+
 import           Vandelay.DSL.Core              as Core
 import           Vandelay.DSL.Estimates.ParserT
 
@@ -21,6 +22,7 @@ getEstimates vtdh = do
       , estimatesHM   = ests
       , table         = tableD vtdh
       , substitutions = []
+      , target        = targetD vtdh
       }
   where
     estimateFiles = T.unpack . fst <$> desiredModelsD vtdh
@@ -28,12 +30,14 @@ getEstimates vtdh = do
 data VandelayTemplateDhall = VandelayTemplateDhall
     { desiredModelsD ∷ [(Text, Text)] -- ^ (Maybe Path, Model Name)
     , tableD         ∷ [TableCommand]
+    , targetD        ∷ Target
     } deriving (Show)
 
 vandelayTemplateDhall ∷ Decoder VandelayTemplateDhall
 vandelayTemplateDhall = record
   ( VandelayTemplateDhall <$> field "models" (list desiredModel)
                           <*> field "table"  (list tableCommand)
+                          <*> field "target" undefined
   )
 
 desiredModel ∷ Decoder (Text, Text)
@@ -41,7 +45,7 @@ desiredModel = record $ (,) <$> field "file" strictText <*> field "column" stric
 
 tableCommand ∷ Decoder TableCommand
 tableCommand = union
-  (  ( Latex <$> constructor "Latex" strictText)
+  (  ( Raw <$> constructor "Raw" strictText)
   <> ( Data  <$> constructor "Row"   outputRequest)
   )
 

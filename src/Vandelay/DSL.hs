@@ -3,15 +3,15 @@ module Vandelay.DSL where
 import           Control.Monad.Error.Class
 import           Control.Monad.RWS
 import qualified RIO.Text                  as T
+
 import           Vandelay.DSL.Core
 import           Vandelay.DSL.Estimates
 
 
-type VandelayT m = RWST Models LaTeX EstimatesHM m
+type VandelayT m = RWST Models Text EstimatesHM m
 type VandelayM = VandelayT (ExceptT ErrorMsg IO)
 
 type Models = [(FilePath, ModelName)]
-type LaTeX  = Text
 
 createTable ∷ (MonadError ErrorMsg m, MonadIO m)
             ⇒ [FilePath]     -- ^ Estimates files
@@ -28,7 +28,7 @@ addText = tell
 
 dataRow ∷ (MonadError ErrorMsg m, MonadIO m) ⇒ OutputRequest → VandelayT m ()
 dataRow or = 
-  outputRow or <$> get <*> ask >>= \case
+  outputRow undefined or <$> get <*> ask >>= \case
     Left e  → throwError e
     Right t → tell t
 
