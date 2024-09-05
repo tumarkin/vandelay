@@ -36,7 +36,10 @@ makeTable
     -- ^ Error message or ()
 makeTable dir templatePath = addFilepathIfError $ do
     template ← readTemplate templatePath
-    let outFile = dir </> takeFileName templatePath -<.> "tex"
+    let outFile = dir </> takeFileName templatePath -<.> ext
+        ext = case template.target of
+                LatexTarget -> "tex"
+                TypstTarget -> "typ"
     (_, _, res) ← runMakeMonad createOutput template
 
     liftIO . RT.putChunk $ Rainbow.chunk "Success: " & fore green
@@ -45,6 +48,7 @@ makeTable dir templatePath = addFilepathIfError $ do
   where
     addFilepathIfError = prependError ("In template: " <> tTemplatePath <> "\n")
     tTemplatePath = T.pack templatePath
+
 
 -- | Internal data types
 type MakeMonad env = RWST VandelayTemplate Text () (ExceptT ErrorMsg (RIO env))
@@ -72,9 +76,6 @@ askTable = asks (.table)
 
 askDesiredModels ∷ MakeMonad env [(FilePath, Text)]
 askDesiredModels = liftEither . getDesiredModels =<< ask
-
--- askSubstitutions ∷ MakeMonad env [(Text, Text)]
--- askSubstitutions = asks (.substitutions)
 
 askEstimatesHM ∷ MakeMonad env EstimatesHM
 askEstimatesHM = liftEither . getEstimatesHM =<< ask

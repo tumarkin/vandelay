@@ -11,8 +11,8 @@ import RIO
 type ErrorMsg = Text
 
 -- | Prepend Error
-prependError :: Text -> ExceptT ErrorMsg (RIO env) a -> ExceptT ErrorMsg (RIO env) a
+prependError ∷ Text → ExceptT ErrorMsg (RIO env) a → ExceptT ErrorMsg (RIO env) a
 prependError t m =
     ExceptT $ runExceptT m >>= \case
-      Left e -> return (Left (t <> e))
-      Right a -> return (Right a)
+        Left e → return (Left (t <> e))
+        Right a → return (Right a)
