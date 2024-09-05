@@ -2,9 +2,7 @@
 -- Common parsers elements
 --------------------------------------------------------------------------------
 module Vandelay.DSL.Core.ParserT
-  ( int
-  , unsignedInt
-  , double
+  ( doubleP
   , boolP
   , eol
   ) where
@@ -14,8 +12,8 @@ import           Text.Parsec hiding (many, optional, (<|>))
 
 
 -- Integers
-int ∷ Stream s m Char ⇒ ParsecT s u m Int
-int = (*) <$> option 1 (char '-' >> return (-1)) <*> unsignedInt
+intP ∷ Stream s m Char ⇒ ParsecT s u m Int
+intP = (*) <$> option 1 (char '-' >> return (-1)) <*> unsignedIntP
 
 boolP ∷ Stream s m Char ⇒ ParsecT s u m Bool
 boolP =  try (string "true" >> pure True)
@@ -30,14 +28,14 @@ boolP =  try (string "true" >> pure True)
      <|> try (string "F" >> pure False)
      <|> fail "Unable to parse boolean"
 
-unsignedInt ∷ Stream s m Char ⇒ ParsecT s u m Int
-unsignedInt =
+unsignedIntP ∷ Stream s m Char ⇒ ParsecT s u m Int
+unsignedIntP =
   hoistMaybe "Error parsing integer" $
     readMaybe <$> many1 digit
 
 -- Doubles
-double ∷ Stream s m Char ⇒ ParsecT s u m Double
-double = parNegNumber <|> negativeNumber <|> unsignedExponentiatedNumber
+doubleP ∷ Stream s m Char ⇒ ParsecT s u m Double
+doubleP = parNegNumber <|> negativeNumber <|> unsignedExponentiatedNumber
 
 parNegNumber   ∷ Stream s m Char ⇒ ParsecT s u m Double
 negativeNumber ∷ Stream s m Char ⇒ ParsecT s u m Double
@@ -70,14 +68,13 @@ hoistMaybe errormsg pma =
 
 
 exponentialTerm ∷ Stream s m Char ⇒ ParsecT s u m Double
-exponentialTerm = (10^^) <$> (oneOf "eE" >> int)
+exponentialTerm = (10^^) <$> (oneOf "eE" >> intP)
 
 optionalExponent ∷ Stream s m Char ⇒ ParsecT s u m Double
 optionalExponent  = option 1 exponentialTerm
 
 
 -- End of line
-
 eol ∷ Stream s m Char ⇒ ParsecT s u m String
 eol =  try (string "\n\r")
    <|> try (string "\r\n")

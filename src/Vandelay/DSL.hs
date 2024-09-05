@@ -3,6 +3,8 @@ module Vandelay.DSL where
 import           Control.Monad.Error.Class
 import           Control.Monad.RWS
 import qualified RIO.Text                  as T
+import RIO
+import           Control.Monad.Except
 
 import           Vandelay.DSL.Core
 import           Vandelay.DSL.Estimates

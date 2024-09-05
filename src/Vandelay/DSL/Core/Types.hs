@@ -1,4 +1,3 @@
-{-# LANGUAGE TemplateHaskell #-}
 module Vandelay.DSL.Core.Types
   (
     -- * Estimates
@@ -16,19 +15,6 @@ module Vandelay.DSL.Core.Types
   , OutputRequest(..)
   , FormatSpec(..)
 
-  -- , oName
-  -- , oCoeffs
-  -- , oFormatSpec
-  -- , oItemIdx
-  -- , oFormat
-  -- , oScale
-  -- , oSurround
-  -- , oEmpty
-  -- , oModifyZero
-
-
-  , texify
-
     -- * Output templates
   , VandelayTemplate(..)
   , TableCommand(..)
@@ -39,13 +25,8 @@ module Vandelay.DSL.Core.Types
 
   ) where
 
--- import           Lens.Simple               (makeLenses)
 import           Data.Default.Class
--- import           Lens.Micro.TH
-import qualified RIO.Text                  as T
-
-import           Vandelay.DSL.Core.Modules
-import           Vandelay.DSL.Core.Text
+import RIO
 
 -- Estimates
 type EstimatesHM = Map FilePath  ModelHM
@@ -140,24 +121,4 @@ instance Default FormatSpec where
       , modifyZero = True
       , empty      = Nothing
       }
-
--- makeLenses ''OutputRequest
--- makeLenses ''FormatSpec
-
-
--- Output functions
-texify ∷ OutputRequest → DataItem → Text
-texify _  (StrData t)   = "{" <> t <> "}"
-texify or  BlankData    = fromMaybe "" $ or.formatSpec.empty
--- texify or (ValData v s) = surroundText st (changeAllZeros caz (commaPrintf fmt (scale * v))) <> makeStars s
-texify or (ValData v s) = surroundText st (changeAllZeros caz (packPrintf fmt (scale * v))) <> makeStars s
-  where
-    caz   = or.formatSpec.modifyZero
-    st    = fromMaybe ("", "") $ or.formatSpec.surround
-    fmt   = T.unpack $ or.formatSpec.format
-    scale = or.formatSpec.scale
-
-makeStars ∷ Int → Text
-makeStars i | i == 0    = ""
-            | otherwise = "\\sym{" <> T.replicate i "*" <> "}"
 

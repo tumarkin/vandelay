@@ -6,6 +6,7 @@ import           Dhall
 import           Dhall.Marshal.Decode           as D
 import           RIO
 import qualified RIO.Text                       as T
+import           Control.Monad.Except
 
 import           Vandelay.DSL.Core              as Core
 import           Vandelay.DSL.Estimates.ParserT

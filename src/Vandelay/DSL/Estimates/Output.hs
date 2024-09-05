@@ -7,6 +7,7 @@ import           Data.Sequences    (index)
 import qualified RIO.List          as L
 import qualified RIO.Map           as M
 import qualified RIO.Text          as T
+import RIO
 
 import           Vandelay.DSL.Core
 
@@ -38,13 +39,13 @@ findDataItem (efp, mn) pCoefs idx est = do
     -- named estimates when the file is not specified.
     emsInFiles <- do
         let matchingEst = M.filterWithKey (\k _ → k == efp) est
-        if | length matchingEst == 0 → Left $ noEstFileErr efp
+        if | null matchingEst → Left $ noEstFileErr efp
            | length matchingEst == 1 → Right . head . impureNonNull $ matchingEst
            | otherwise               → Left $ multiEstFileErr efp
 
     -- Find model in estimates
     let modelHMs   = M.filterWithKey (\k _ → k == mn) emsInFiles
-    coefHM <- if | length modelHMs == 0 → Left noModelErr
+    coefHM <- if | null modelHMs → Left noModelErr
                  | length modelHMs == 1 → Right . head . impureNonNull $ modelHMs
                  | otherwise            → Left multiModelErr
 

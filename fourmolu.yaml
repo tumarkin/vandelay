@@ -25,7 +25,7 @@ in-style: "left-align"
 # Whether to put parentheses around a single constraint
 single-constraint-parens: "always"
 # Output Unicode syntax
-unicode: "never"
+unicode: "always"
 # Give the programmer more choice on where to insert blank lines
 respectful: true
 # Fixity information for operators

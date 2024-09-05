@@ -1,6 +1,7 @@
 import           Options.Applicative
 import           Rainbow                hiding ((<>))
 import qualified Rainbow.Translate      as RT
+import RIO
 
 import           Vandelay.App.Cmd.Dhall
 import           Vandelay.App.Cmd.Init
@@ -26,8 +27,8 @@ run cmd =
 
 
 printError (Right _)  = pure ()
-printError (Left err) = RT.putChunkLn (Rainbow.chunk ("Vandelay error:") & fore red)
-                        >> RT.putChunkLn (Rainbow.chunk (err))
+printError (Left err) = RT.putChunkLn (Rainbow.chunk "Vandelay error:" & fore red)
+                        >> RT.putChunkLn (Rainbow.chunk err)
 --------------------------------------------------------------------------------
 -- Commands                                                                   --
 --------------------------------------------------------------------------------
