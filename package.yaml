@@ -9,6 +9,7 @@ copyright:           "2022 Robert Tumarkin"
 extra-source-files:
 - README.md
 - ChangeLog.md
+- dhall/*
 
 # Metadata used when publishing your package
 # synopsis:            Short description of your package
