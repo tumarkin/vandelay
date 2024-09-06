@@ -25,9 +25,7 @@ typify or (ValData v s) col =
     zeroFormatter = bool id changeAllZeros or.formatSpec.modifyZero
 
 makeStars ∷ Int → Text
-makeStars i
-    | i == 0 = ""
-    | otherwise = "\\sym{" <> T.replicate i "*" <> "}"
+makeStars i = T.replicate i "*"
 
 brackets ∷ Text → Text
 brackets = surroundText ("[", "]")
@@ -35,6 +33,9 @@ brackets = surroundText ("[", "]")
 quote ∷ Text → Text
 quote = surroundText ("\"", "\"")
 
+parens ∷ Text → Text
+parens = surroundText ("(", ")")
+
 
 columnFunc :: Int -> Text -> Text
-columnFunc i t = "#col" <> tshow i <> (brackets . quote $ t)
+columnFunc i t = brackets $ "#col" <> tshow i <> (parens . quote $ t)
