@@ -23,7 +23,7 @@ outputRow target or est ms = do
     Right
         $ case target of
             LatexTarget → joinAmps ( or.name : map (texify or) result ) <> newLine
-            TypstTarget -> T.intercalate "," (bracket or.name : zipWith (typify or) result [1..]) <> ","
+            TypstTarget -> T.intercalate ",\n" (bracket or.name : map (typify or) result) <> ",\n"
   where
     _findDataItem ∷ (FilePath, ModelName) → Either ErrorMsg DataItem
     _findDataItem mn = findDataItem mn or.coeffs or.formatSpec.itemIdx est

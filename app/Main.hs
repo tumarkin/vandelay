@@ -7,7 +7,6 @@ import qualified Rainbow.Translate as RT
 import Vandelay.App.Cmd.Dhall
 import Vandelay.App.Cmd.Init
 import Vandelay.App.Cmd.Make
-import Vandelay.DSL.Core
 
 --------------------------------------------------------------------------------
 -- Program                                                                    --

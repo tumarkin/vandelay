@@ -8,14 +8,14 @@ import qualified RIO.Text as T
 import Vandelay.DSL.Core.Text
 import Vandelay.DSL.Core.Types
 
-typify ∷ OutputRequest → DataItem → Int → Text
-typify _ (StrData t) _ = brackets t
-typify or BlankData _ = brackets $ fromMaybe "" or.formatSpec.empty
+typify ∷ OutputRequest → DataItem → Text
+typify _ (StrData t) = brackets t
+typify or BlankData = brackets $ fromMaybe "" or.formatSpec.empty
 -- texify or (ValData v s) = surroundText st (changeAllZeros caz (commaPrintf fmt (scale * v))) <> makeStars s
-typify or (ValData v s) col = 
+typify or (ValData v s) = 
     let formattedValue = zeroFormatter $ tprintF fmt (scale * v) 
         stars = makeStars s
-    in columnFunc col . surroundText st $ formattedValue <> stars
+    in columnFunc fmt . surroundText st $ formattedValue <> stars
   where
     -- caz   = or.formatSpec.modifyZero
     st = fromMaybe ("", "") $ or.formatSpec.surround
@@ -37,5 +37,8 @@ parens ∷ Text → Text
 parens = surroundText ("(", ")")
 
 
-columnFunc :: Int -> Text -> Text
-columnFunc i t = brackets $ "#col" <> tshow i <> (parens . quote $ t)
+columnFunc :: String -> Text -> Text
+columnFunc fmt  t = brackets $ "#cad" <> parens args
+  where
+    args = quote t <> ", fmt: " <> (quote $ tprintF fmt 0.0)
+
