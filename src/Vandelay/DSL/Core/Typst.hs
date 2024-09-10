@@ -15,7 +15,7 @@ typify or BlankData = brackets $ fromMaybe "" or.formatSpec.empty
 typify or (ValData v s) = 
     let formattedValue = zeroFormatter $ tprintF fmt (scale * v) 
         stars = makeStars s
-    in columnFunc fmt . surroundText st $ formattedValue <> stars
+    in brackets . surroundText st $ formattedValue <> stars
   where
     -- caz   = or.formatSpec.modifyZero
     st = fromMaybe ("", "") $ or.formatSpec.surround
@@ -30,15 +30,15 @@ makeStars i = T.replicate i "*"
 brackets ∷ Text → Text
 brackets = surroundText ("[", "]")
 
-quote ∷ Text → Text
-quote = surroundText ("\"", "\"")
+-- quote ∷ Text → Text
+-- quote = surroundText ("\"", "\"")
 
-parens ∷ Text → Text
-parens = surroundText ("(", ")")
+-- parens ∷ Text → Text
+-- parens = surroundText ("(", ")")
 
 
-columnFunc :: String -> Text -> Text
-columnFunc fmt  t = brackets $ "#cad" <> parens args
-  where
-    args = quote t <> ", fmt: " <> (quote $ tprintF fmt 0.0)
+-- columnFunc :: String -> Text -> Text
+-- columnFunc fmt  t = brackets $ "#cad" <> parens args
+--   where
+--     args = quote t <> ", fmt: " <> (quote $ tprintF fmt 0.0)
 
