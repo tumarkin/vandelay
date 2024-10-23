@@ -22,7 +22,7 @@ typify or (ValData v s) =
     fmt = T.unpack $ or.formatSpec.format
     scale = or.formatSpec.scale
 
-    zeroFormatter = bool id changeAllZeros or.formatSpec.modifyZero
+    zeroFormatter = bool id (changeAllZeros "<") or.formatSpec.modifyZero
 
 makeStars ∷ Int → Text
 makeStars i = T.replicate i "*"

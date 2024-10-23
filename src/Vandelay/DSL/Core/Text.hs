@@ -35,14 +35,15 @@ changeAllZeros
     -- :: Bool
     ∷ Text
     → Text
+    → Text
 -- changeAllZeros False t = t
-changeAllZeros s =
+changeAllZeros lessThan s =
     if T.any (`elem` ['1' .. '9']) s
         then s
         else fixZero s
   where
     fixZero ∷ Text → Text
     fixZero _s =
-        "$<$" <> init s <> "1"
+       lessThan <> init s <> "1"
       where
         s = fromMaybe (error "fixZero on empty string") (fromNullable . T.strip $ _s)

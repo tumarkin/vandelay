@@ -19,7 +19,7 @@ texify or (ValData v s) = surroundText st (zeroFormatter (tprintF fmt (scale * v
     fmt = T.unpack $ or.formatSpec.format
     scale = or.formatSpec.scale
 
-    zeroFormatter = bool id changeAllZeros or.formatSpec.modifyZero
+    zeroFormatter = bool id (changeAllZeros "$<$") or.formatSpec.modifyZero
 
 makeStars ∷ Int → Text
 makeStars i
