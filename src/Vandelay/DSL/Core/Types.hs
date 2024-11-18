@@ -14,7 +14,7 @@ module Vandelay.DSL.Core.Types (
     VandelayTemplate (..),
     TableCommand (..),
     Target (..),
-    getDesiredModels,
+    -- getDesiredModels,
     getEstimatesHM,
 ) where
 
@@ -48,7 +48,7 @@ instance Monoid DataItem where
 
 -- Vandalay Template
 data VandelayTemplate = VandelayTemplate
-    { desiredModels ∷ [(FilePath, Text)]
+    { allModels ∷ [(FilePath, Text)]
     -- ^ (Maybe Path, Model Name)
     , estimatesHM ∷ EstimatesHM
     , table ∷ [TableCommand]
@@ -62,16 +62,16 @@ data Target = LatexTarget | TypstTarget
 -- Table Commands
 data TableCommand
     = Raw Text
-    | -- | Template FilePath
-      Data OutputRequest
+    | Data OutputRequest
+    | SetActiveModels [(FilePath, Text)]
     deriving (Show)
 
 -- Safe Accessors
-getDesiredModels ∷ VandelayTemplate → Either Text [(FilePath, Text)]
+-- getDesiredModels ∷ VandelayTemplate → Either Text [(FilePath, Text)]
 getEstimatesHM ∷ VandelayTemplate → Either Text EstimatesHM
-getDesiredModels vt
-    | null vt.desiredModels = Left "Models not specified"
-    | otherwise = Right vt.desiredModels
+-- getDesiredModels vt = 
+-- | null vt.desiredModels = Left "Models not specified"
+    -- | otherwise = Right vt.desiredModels
 
 getEstimatesHM vt
     | null vt.estimatesHM = Left "Estimate file not specified"

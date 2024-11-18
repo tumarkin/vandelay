@@ -40,7 +40,7 @@ makeTable dir templatePath = addFilepathIfError $ do
         ext = case template.target of
                 LatexTarget -> "tex"
                 TypstTarget -> "typ"
-    (_, _, res) ← runMakeMonad createOutput template
+    (_, _, res) ← runMakeMonad createOutput template template.allModels
 
     liftIO . RT.putChunk $ Rainbow.chunk "Success: " & fore green
     liftIO . putStrLn $ templatePath
@@ -51,9 +51,10 @@ makeTable dir templatePath = addFilepathIfError $ do
 
 
 -- | Internal data types
-type MakeMonad env = RWST VandelayTemplate Text () (ExceptT ErrorMsg (RIO env))
+type MakeMonad env = RWST VandelayTemplate Text ActiveModels (ExceptT ErrorMsg (RIO env))
+type ActiveModels = [(FilePath, Text)]
 
-runMakeMonad mm vtl = runRWST mm vtl ()
+runMakeMonad = runRWST 
 
 -- | Table output creation functions
 createOutput ∷ MakeMonad env ()
@@ -64,7 +65,8 @@ createOutput = do
 doTableCommand ∷ Target → TableCommand → MakeMonad env ()
 doTableCommand _ (Raw l) = tellLn l
 doTableCommand tgt (Data or) =
-    tellLn =<< liftEither =<< outputRow tgt or <$> askEstimatesHM <*> askDesiredModels
+    tellLn =<< liftEither =<< outputRow tgt or <$> askEstimatesHM <*> getDesiredModels
+doTableCommand _ (SetActiveModels m) = put m
 
 -- | Text utility functions
 tellLn ∷ Text → MakeMonad env ()
@@ -74,8 +76,10 @@ tellLn s = tell $ s <> "\n"
 askTable ∷ MakeMonad env [TableCommand]
 askTable = asks (.table)
 
-askDesiredModels ∷ MakeMonad env [(FilePath, Text)]
-askDesiredModels = liftEither . getDesiredModels =<< ask
+getDesiredModels ∷ MakeMonad env [(FilePath, Text)]
+getDesiredModels = get >>= \case 
+    [] -> error "Template has no active models."
+    models -> pure models
 
 askEstimatesHM ∷ MakeMonad env EstimatesHM
 askEstimatesHM = liftEither . getEstimatesHM =<< ask

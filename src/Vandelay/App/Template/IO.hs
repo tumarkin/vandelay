@@ -20,7 +20,7 @@ getEstimates vtdh = do
     ests ← mconcat <$> mapM readEstimates estimateFiles
     pure
         VandelayTemplate
-            { desiredModels = first T.unpack <$> vtdh.desiredModelsD
+            { allModels = first T.unpack <$> vtdh.desiredModelsD
             , estimatesHM = ests
             , table = vtdh.tableD
             , target = vtdh.targetD
@@ -53,6 +53,7 @@ tableCommand =
     union
         ( (Raw <$> constructor "Latex" strictText)
        <> (Data <$> constructor "Row" outputRequest)
+       <> (SetActiveModels <$> constructor "SetActiveModels" setActiveModelsRequest)
         )
 
 outputRequest ∷ Decoder OutputRequest
@@ -73,6 +74,9 @@ formatSpecD =
         <*> field "scale" D.double
         <*> field "reformat_zero" D.bool
         <*> field "empty" (D.maybe strictText)
+
+setActiveModelsRequest :: Decoder [(FilePath, Text)]
+setActiveModelsRequest = fmap (first T.unpack) <$> list desiredModel
 
 surroundD ∷ Decoder (Text, Text)
 surroundD = record $ (,) <$> field "before" strictText <*> field "after" strictText
