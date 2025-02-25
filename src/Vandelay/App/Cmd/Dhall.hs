@@ -16,4 +16,4 @@ installLibrary dir = do
     mapM_ (\(fp, bs) -> writeFileBinary (dir </> fp) bs) dhallFiles
 
 dhallFiles ∷ [(FilePath, ByteString)]
-dhallFiles = $(embedDir "dhall")
+dhallFiles = $(embedDir "dhall/")

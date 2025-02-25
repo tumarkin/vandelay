@@ -8,7 +8,10 @@ import           Data.String.Interpolate (i)
 import           RIO.FilePath
 import qualified RIO.Set                 as Set
 import qualified RIO.Text                as T
+import qualified RIO.Text.Partial                as T'
 import           Vandelay.DSL.Core
+import RIO
+import           Control.Monad.Except
 
 -- Initialize template
 initTemplate ∷ [FilePath]                         -- ^ Estimation results filepaths
@@ -49,7 +52,7 @@ let models =
 
 
 ----------------------------------------------------------------------------------------------------
--- Substitutions                                                                                  --
+-- Table descriptive information                                                                  --
 ----------------------------------------------------------------------------------------------------
 let caption     =  "TITLE"
 let label       =  "tbl:label"
@@ -153,14 +156,14 @@ modelsFromContent ∷ Text   -- | Content
                   → [Text] -- | Model
 modelsFromContent t =
   maybe []
-        (stripFilter . splitOn tab . head)
+        (stripFilter . T'.splitOn tab . head)
         (fromNullable . T.lines $ t)
 
 
 varsFromContent ∷ Text   -- | Content
                 → [Text] -- | [(Variable, Ref)]
 varsFromContent =
-  stripFilter . mapMaybe (fmap head . fromNullable . splitOn tab) . T.lines
+  stripFilter . mapMaybe (fmap head . fromNullable . T'.splitOn tab) . T.lines
 
 -- | Text utility functions
 stripFilter∷ [Text] → [Text] -- | Remove spaces, drop blanks
