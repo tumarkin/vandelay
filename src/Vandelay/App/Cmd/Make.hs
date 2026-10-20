@@ -21,20 +21,24 @@ makeTables
     -- ^ Output directory
     → [FilePath]
     -- ^ Vandelay template filepath globs
+    → Bool
+    -- ^ Force output to stdout
     → ExceptT ErrorMsg (RIO env) ()
     -- ^ Error message or ()
-makeTables dir gs =
-    mapM_ (makeTable dir) =<< globPaths gs
+makeTables dir gs toStdOut =
+    mapM_ (makeTable dir toStdOut) =<< globPaths gs
 
 -- | Create a LaTeX table from a Vandelay template
 makeTable
     ∷ FilePath
     -- ^ Output directory
+    → Bool
+    -- ^ Force output to stdout
     → FilePath
     -- ^ Vandelay template filepath
     → ExceptT ErrorMsg (RIO env) ()
     -- ^ Error message or ()
-makeTable dir templatePath = addFilepathIfError $ do
+makeTable dir toStdOut templatePath = addFilepathIfError $ do
     template ← readTemplate templatePath
     let outFile = dir </> takeFileName templatePath -<.> ext
         ext = case template.target of
@@ -42,9 +46,12 @@ makeTable dir templatePath = addFilepathIfError $ do
                 TypstTarget -> "typ"
     (_, _, res) ← runMakeMonad createOutput template template.allModels
 
-    liftIO . RT.putChunk $ Rainbow.chunk "Success: " & fore green
-    liftIO . putStrLn $ templatePath
-    unsafeWriteFile (Just outFile) res
+    if toStdOut
+        then liftIO . putStrLn . T.unpack $ res
+        else do
+            liftIO . RT.putChunk $ Rainbow.chunk "Success: " & fore green
+            liftIO . putStrLn $ templatePath
+            unsafeWriteFile (Just outFile) res
   where
     addFilepathIfError = prependError ("In template: " <> tTemplatePath <> "\n")
     tTemplatePath = T.pack templatePath

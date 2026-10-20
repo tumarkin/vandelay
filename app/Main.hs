@@ -19,7 +19,7 @@ run ∷ Command → IO (Either Text ())
 run cmd = runSimpleApp . runExceptT $ 
     case cmd of
         Init files out → initTemplate files out
-        Make files outputPath → makeTables outputPath files
+        Make files outputPath stdOut → makeTables outputPath files stdOut
         Dhall outputPath → lift $ installLibrary outputPath
 
 printError (Right _) = pure ()
@@ -32,7 +32,7 @@ printError (Left err) =
 --------------------------------------------------------------------------------
 data Command
     = Init [File] Output -- SortOptions -- SourceFileReferences
-    | Make [File] OutputPath
+    | Make [File] OutputPath Bool -- Files to make, output directory, stdout override
     | Dhall OutputPath
     deriving (Show)
 
@@ -62,6 +62,7 @@ parseMake ∷ Parser Command
 parseMake =
     Make <$> some (argument str (metavar "VANDELAY-TEMPLATE(S)"))
          <*> outputPath
+         <*> forceStdOut
   where
     outputPath = strOption
         ( long "output-path"
@@ -70,6 +71,10 @@ parseMake =
             <> help "Destination for the processed templates"
             <> value "."
         )
+
+    forceStdOut = switch
+        ( long "stdout"
+            <> help "Output to STDOUT")
 
 parseDhall ∷ Parser Command
 parseDhall =
